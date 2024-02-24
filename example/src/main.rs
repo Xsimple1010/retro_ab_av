@@ -45,6 +45,7 @@ fn main() {
         return;
     }
 
+    //isso deve ser inicializado somente na thread principal!
     let av_instance = retro_ab_av::get_instance();
 
     //se voce estive criando uma interface provavelmente vai querer
@@ -52,17 +53,15 @@ fn main() {
     //por isso retro_ab_av::init pegar para si a pose de av_instance.
     //então no multithreading voce dever garantir que retro_ab_av::init sera chamado
     //dentro a thread em que voce for fazer a renderização.
-    let mut win_ctx = retro_ab_av::init(av_instance, Arc::clone(&ctx.core.av_info));
-    let mut event_pump = win_ctx.get_event();
+    let av_ctx = retro_ab_av::init(av_instance, Arc::clone(&ctx.core.av_info));
+    let mut event_pump = av_ctx.get_event();
 
     'running: loop {
-        match core::run(&ctx) {
-            Ok(..) => {}
-            Err(e) => {
-                println!("[{:?}]: message -> {:?}", e.level, e.message)
-            }
-        }
-        win_ctx.swap();
+        //As callbacks nao tem
+        retro_ab_av::update_extras(&av_ctx);
+
+        av_ctx.swap();
+
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -73,8 +72,16 @@ fn main() {
                 _ => {}
             }
         }
+
+        match core::run(&ctx) {
+            Ok(..) => {}
+            Err(e) => {
+                println!("[{:?}]: message -> {:?}", e.level, e.message)
+            }
+        }
     }
 
-    retro_ab_av::de_init(&mut win_ctx);
+    av_ctx.hide();
     let _ = core::de_init(ctx);
+    retro_ab_av::de_init(av_ctx);
 }

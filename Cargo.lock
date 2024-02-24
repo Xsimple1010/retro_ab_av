@@ -290,6 +290,7 @@ dependencies = [
 name = "retro_ab_av"
 version = "0.1.0"
 dependencies = [
+ "bindgen",
  "cc",
  "gl",
  "retro_ab",

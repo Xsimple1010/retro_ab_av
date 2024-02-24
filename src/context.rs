@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 
 use retro_ab::core::AvInfo;
 use sdl2::{
@@ -7,39 +7,39 @@ use sdl2::{
 };
 
 pub struct RetroAVInstance {
-    sdl: Sdl,
+    pub sdl: Sdl,
 }
 pub struct RetroAvCtx {
     instance: RetroAVInstance,
-    video: Video,
-    info: Arc<AvInfo>,
+    video: RetroVideo,
+    pub info: Arc<AvInfo>,
 }
 
-pub struct Video {
+pub struct RetroVideo {
     _v_subsystem: VideoSubsystem,
     _gl_ctx: GLContext,
-    win: Window,
+    win: RefCell<Window>,
 }
 
 impl RetroAvCtx {
-    pub fn get_event(&mut self) -> EventPump {
+    pub fn get_event(&self) -> EventPump {
         self.instance.sdl.event_pump().unwrap()
     }
 
     pub fn swap(&self) {
-        self.video.win.gl_swap_window();
+        self.video.win.borrow_mut().gl_swap_window();
     }
 
-    pub fn hide(&mut self) {
-        self.video.win.hide();
+    pub fn hide(&self) {
+        self.video.win.borrow_mut().hide();
     }
 
-    pub fn show(&mut self) {
-        self.video.win.show();
+    pub fn show(&self) {
+        self.video.win.borrow_mut().show();
     }
 }
 
-fn init_video_subsystem(instance: &RetroAVInstance, av_info: &Arc<AvInfo>) -> Video {
+fn init_video_subsystem(instance: &RetroAVInstance, av_info: &Arc<AvInfo>) -> RetroVideo {
     let video_subsystem: VideoSubsystem = instance.sdl.video().unwrap();
     let gl_attr = video_subsystem.gl_attr();
     gl_attr.set_context_profile(GLProfile::Core);
@@ -61,10 +61,10 @@ fn init_video_subsystem(instance: &RetroAVInstance, av_info: &Arc<AvInfo>) -> Vi
     debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
     debug_assert_eq!(gl_attr.context_version(), (3, 3));
 
-    Video {
+    RetroVideo {
         _v_subsystem: video_subsystem,
         _gl_ctx,
-        win: window,
+        win: RefCell::new(window),
     }
 }
 
