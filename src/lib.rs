@@ -20,8 +20,7 @@ pub use video::video_refresh_callback;
 pub fn update_extras(retro_av_ctx: &Arc<RetroAvCtx>) {
     unsafe {
         set_video_extra_data(Arc::into_raw(retro_av_ctx.clone()) as *mut c_void);
-        set_audio_sample_extra_data(Arc::into_raw(retro_av_ctx.clone()) as *mut c_void);
-        set_audio_sample_batch_extra_data(Arc::into_raw(retro_av_ctx.clone()) as *mut c_void);
+        set_audio_extra_data(Arc::into_raw(retro_av_ctx.clone()) as *mut c_void);
     }
 }
 

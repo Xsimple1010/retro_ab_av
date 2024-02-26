@@ -14,9 +14,8 @@ size_t core_audio_sample_batch(const int16_t *data,
                                size_t frames);
 
 // tem que ser chamada antes que qualquer callback ser chamada
-void set_video_extra_data(void *extra_data); //
-void set_audio_sample_extra_data(void *extra_data);
-void set_audio_sample_batch_extra_data(void *extra_data);
+void set_video_extra_data(void *extra_data);
+void set_audio_extra_data(void *extra_data);
 
 void set_rust_video_refresh(RustVideoRefreshT cb);
 void set_rust_audio_sample(RustAudioSampleT cb);

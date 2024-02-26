@@ -1,10 +1,9 @@
 use std::path::PathBuf;
 
 fn main() {
-    let video_fns = "core_video_refresh|set_video_extra_data|set_rust_video_refresh";
-    let audio_sample_fns = "core_audio_sample|set_audio_sample_extra_data|set_rust_audio_sample";
-    let audio_sample_batch_fns =
-        "core_audio_sample_batch|set_audio_sample_batch_extra_data|set_rust_audio_sample_batch";
+    let video_fns = "core_video_refresh|set_rust_video_refresh";
+    let audio_sample_fns = "core_audio_sample|set_rust_audio_sample";
+    let audio_sample_batch_fns = "core_audio_sample_batch|set_rust_audio_sample_batch";
 
     cc::Build::new()
         .file("src/lib/handle_retro_cb.c")
@@ -19,7 +18,11 @@ fn main() {
                 + "|"
                 + audio_sample_batch_fns
                 + "|"
-                + "de_init_all_callbacks",
+                + "de_init_all_callbacks"
+                + "|"
+                + "set_video_extra_data"
+                + "|"
+                + "set_audio_extra_data",
         )
         .clang_arg("-fparse-all-comments")
         .default_enum_style(bindgen::EnumVariation::Rust {

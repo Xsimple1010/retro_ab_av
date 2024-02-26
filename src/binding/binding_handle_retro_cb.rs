@@ -39,10 +39,7 @@ extern "C" {
     pub fn set_video_extra_data(extra_data: *mut ::std::os::raw::c_void);
 }
 extern "C" {
-    pub fn set_audio_sample_extra_data(extra_data: *mut ::std::os::raw::c_void);
-}
-extern "C" {
-    pub fn set_audio_sample_batch_extra_data(extra_data: *mut ::std::os::raw::c_void);
+    pub fn set_audio_extra_data(extra_data: *mut ::std::os::raw::c_void);
 }
 extern "C" {
     pub fn set_rust_video_refresh(cb: RustVideoRefreshT);
