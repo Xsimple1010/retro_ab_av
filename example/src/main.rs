@@ -15,7 +15,7 @@ fn input_state_callback(_port: i16, _device: i16, _index: i16, _id: i16) -> i16 
 
 fn main() {
     let ctx = core::load(
-        "C:/WFL/cores/bsnes_libretro.dll",
+        "C:/Projetos/retro_ab/cores/test.dll",
         test_tools::paths::get_paths(),
         RetroEnvCallbacks {
             audio_sample_batch_callback,
@@ -56,7 +56,15 @@ fn main() {
     let av_ctx = retro_ab_av::init(av_instance, Arc::clone(&ctx.core.av_info));
     let mut event_pump = av_ctx.get_event();
 
+    let mut frame = 0;
+
     'running: loop {
+        if frame == 500 {
+            break 'running;
+        }
+
+        frame = frame + 1;
+
         //As callbacks nao tem
         retro_ab_av::update_extras(&av_ctx);
 

@@ -1,11 +1,8 @@
 {
-  "cSpell.words": [
-    "bindgen",
-    "Insntace",
-    "opengl"
-  ],
+  "cSpell.words": ["bindgen", "Insntace", "opengl"],
   "files.associations": {
     "libretro.h": "c",
-    "handle_retro_cb.h": "c"
+    "handle_retro_cb.h": "c",
+    "stdio.h": "c"
   }
 }

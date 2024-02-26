@@ -30,7 +30,7 @@ pub fn get_instance() -> RetroAVInstance {
     context::create_instance()
 }
 
-#[doc = "inicializa um instancia criada com 'get_instance'. automaticamente um janela é criada em novo perfio de audio é adicionado"]
+#[doc = "inicializa um instancia criada com 'get_instance'. automaticamente uma janela é criada em novo perfio de audio é adicionado"]
 pub fn init(av_instance: RetroAVInstance, av_info: Arc<AvInfo>) -> Arc<RetroAvCtx> {
     unsafe {
         set_rust_video_refresh(Some(video::rust_video_refresh_callback));
