@@ -27,7 +27,7 @@ pub extern "C" fn rust_audio_sample_batch_callback(
         let ctx: Arc<RetroAvCtx> = unsafe { Arc::from_raw(extra_data as *const RetroAvCtx) };
 
         unsafe {
-            let slice = std::slice::from_raw_parts(data as *const i16, frames);
+            let slice = std::slice::from_raw_parts(data as *const i16, frames * 2);
 
             ctx.audio.device.queue_audio(&slice).expect("msg");
             ctx.audio.device.resume();
@@ -61,7 +61,7 @@ pub fn init(instance: &RetroAVInstance, av_info: &Arc<AvInfo>) -> RetroAudio {
     let desired_spec = AudioSpecDesired {
         channels: Some(2),
         freq: Some(freq),
-        samples: Some(4095),
+        samples: Some(4096),
     };
 
     let device = audio_subsystem
