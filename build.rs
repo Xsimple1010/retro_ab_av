@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 fn main() {
-    let video_fns = "core_video_refresh|set_rust_video_refresh";
-    let audio_sample_fns = "core_audio_sample|set_rust_audio_sample";
+    let video_fns = "get_video_extra_data|core_video_refresh|set_rust_video_refresh";
+    let audio_sample_fns = "get_audio_extra_data|core_audio_sample|set_rust_audio_sample";
     let audio_sample_batch_fns = "core_audio_sample_batch|set_rust_audio_sample_batch";
 
     cc::Build::new()

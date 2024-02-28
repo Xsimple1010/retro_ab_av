@@ -42,7 +42,22 @@ pub fn init(av_instance: RetroAVInstance, av_info: Arc<AvInfo>) -> Arc<RetroAvCt
 
 #[doc = "eliminar o contexto atual, voce dever chamar isso sempre que nao for mais usar um contexto!"]
 pub fn de_init(_av_ctx: Arc<RetroAvCtx>) {
+    println!("{:?}", Arc::strong_count(&_av_ctx));
+
     unsafe {
         de_init_all_callbacks();
+        let v_ptr = get_video_extra_data();
+
+        if !v_ptr.is_null() {
+            Arc::from_raw(v_ptr);
+        }
+
+        let a_ptr = get_audio_extra_data();
+
+        if !a_ptr.is_null() {
+            Arc::from_raw(a_ptr);
+        }
     }
+
+    println!("{:?}", Arc::strong_count(&_av_ctx));
 }

@@ -22,3 +22,6 @@ void set_rust_audio_sample(RustAudioSampleT cb);
 void set_rust_audio_sample_batch(RustAudioSampleTBatchT cb);
 
 void de_init_all_callbacks();
+
+void *get_video_extra_data();
+void *get_audio_extra_data();

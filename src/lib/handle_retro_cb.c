@@ -82,7 +82,14 @@ void de_init_all_callbacks()
     rust_video_refresh_cb = NULL;
     rust_audio_sample_cb = NULL;
     rust_audio_sample_batch_cb = NULL;
+}
 
-    audio_extra_data = NULL;
-    video_extra_data = NULL;
+void *get_video_extra_data()
+{
+    return video_extra_data;
+}
+
+void *get_audio_extra_data()
+{
+    return audio_extra_data;
 }

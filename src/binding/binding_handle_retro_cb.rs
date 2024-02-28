@@ -53,3 +53,9 @@ extern "C" {
 extern "C" {
     pub fn de_init_all_callbacks();
 }
+extern "C" {
+    pub fn get_video_extra_data() -> *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    pub fn get_audio_extra_data() -> *mut ::std::os::raw::c_void;
+}
