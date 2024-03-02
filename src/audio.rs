@@ -8,4 +8,4 @@ pub fn audio_sample_batch_callback(_data: *const i16, _frames: usize) -> usize {
 
 pub fn audio_sample_callback(_left: i16, _right: i16) {}
 
-pub fn init(_av_info: &Arc<AvInfo>) {}
+pub fn _init(_av_info: &Arc<AvInfo>) {}
