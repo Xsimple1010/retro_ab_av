@@ -30,32 +30,25 @@ fn main() {
     core::init(&core_ctx).expect("Erro ao tentar inicializar o contexto");
     core::load_game(&core_ctx, "C:/WFL/roms/teste.sfc").expect("Erro ao tentar carrega a rom");
 
-    //isso deve ser inicializado somente na thread principal!
     let (mut av_ctx, event_loop) =
         retro_ab_av::init(Arc::clone(&core_ctx.core.av_info)).expect("msg");
-    // let mut event_pump = av_ctx.get_event();
 
     let result = event_loop.run(|event, window_target| {
         match event {
-            // The Resumed/Suspended events are mostly for Android compatibility since the context can get lost there at any point.
-            // For convenience's sake the Resumed event is also delivered on other platforms on program startup.
             event::Event::Resumed => {}
             event::Event::Suspended => {}
-            // By requesting a redraw in response to a AboutToWait event we get continuous rendering.
-            // For applications that only change due to user input you could remove this handler.
             event::Event::AboutToWait => {
-                // retro_ab::core::run(&core_ctx).expect("falha ao requisitar um novo frame");
                 av_ctx.video.window.request_redraw();
+                retro_ab::core::run(&core_ctx).expect("falha ao requisitar um novo frame");
             }
             event::Event::WindowEvent { event, .. } => match event {
-                event::WindowEvent::Resized(new_size) => {
-                    av_ctx.video.resize(new_size.into());
+                event::WindowEvent::Resized(_new_size) => {
+                    // av_ctx.video.resize(new_size.into());
                 }
                 event::WindowEvent::RedrawRequested => {
-                    av_ctx.video.draw_new_frame();
+                    av_ctx.get_new_frame();
+                    // av_ctx.video.draw_new_frame();
                 }
-                // Exit the event loop when requested (by closing the window for example) or when
-                // pressing the Esc key.
                 event::WindowEvent::CloseRequested
                 | event::WindowEvent::KeyboardInput {
                     event:
@@ -66,7 +59,6 @@ fn main() {
                         },
                     ..
                 } => window_target.exit(),
-                // Every other event
                 _ev => {}
             },
             _ => (),

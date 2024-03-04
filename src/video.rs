@@ -1,17 +1,20 @@
-use glium::{
-    backend::glutin::SimpleWindowBuilder, glutin::surface::WindowSurface, implement_vertex,
-    uniform, Display, IndexBuffer, Program, Surface, VertexBuffer,
-};
+use crate::retro_gl::{self, shader::Shader};
 use retro_ab::core::AvInfo;
-use std::{ffi::c_uint, os::raw::c_void, sync::Arc};
-use winit::{
-    error::EventLoopError,
-    event_loop::{EventLoop, EventLoopBuilder},
-    window::Window,
+use std::{
+    ffi::c_uint,
+    os::raw::c_void,
+    ptr::{null, slice_from_raw_parts},
+    sync::Arc,
 };
+use winit::{error::EventLoopError, event_loop::EventLoop};
 
-//
-// static mut RAW_TEX_POINTER: *const c_void = null() as *const c_void;
+static mut RAW_TEX_POINTER: NextFrame = NextFrame {
+    _data: null(),
+    _pitch: 0,
+    _height: 0,
+    _width: 0,
+    _slice: [[0 as i16]].as_ptr(),
+};
 
 pub fn video_refresh_callback(
     _data: *const c_void,
@@ -19,119 +22,48 @@ pub fn video_refresh_callback(
     _height: c_uint,
     _pitch: usize,
 ) {
+    unsafe {
+        let _slice = slice_from_raw_parts(_data as *const i16, (_width * _height) as usize);
+
+        RAW_TEX_POINTER = NextFrame {
+            _data,
+            _height,
+            _width,
+            _pitch,
+            _slice,
+        };
+    }
+}
+
+struct NextFrame {
+    _data: *const c_void,
+    _width: c_uint,
+    _height: c_uint,
+    _pitch: usize,
+    _slice: *const [i16],
 }
 
 pub struct RetroVideo {
-    pub window: Window,
-    _display: Display<WindowSurface>,
-    vertex_buffer: VertexBuffer<Vertex>,
-    index_buffer: IndexBuffer<u16>,
-    program: Program,
-    // texture: Texture2d,
+    pub window: winit::window::Window,
+    shader: retro_gl::shader::Shader,
 }
 
 impl RetroVideo {
-    pub fn draw_new_frame(&mut self) {
-        let mut frame = self._display.draw();
-        let uniforms = uniform! {matrix :[
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0f32]
-        ]};
-
-        frame.clear_color(0., 0., 0., 0.);
-
-        frame
-            .draw(
-                &self.vertex_buffer,
-                &self.index_buffer,
-                &self.program,
-                &uniforms,
-                &Default::default(),
-            )
-            .expect("erro ao tentar desenha o triangulo");
-
-        frame
-            .finish()
-            .expect("erro ao tentar desenha um novo frame");
+    pub fn draw_new_frame(&mut self, _av_info: &Arc<AvInfo>) {
+        //isso resolve o uso exagerado de memoria ram
+        for _ in 0..38_900_00 {}
     }
-
-    pub fn resize(&mut self, new_size: (u32, u32)) {
-        self._display.resize(new_size);
-    }
+    pub fn resize(&mut self, _new_size: (u32, u32)) {}
 }
-
-#[derive(Copy, Clone)]
-struct Vertex {
-    position: [f32; 2],
-    // color: [f32; 4],
-}
-
-implement_vertex!(Vertex, position);
 
 pub fn init(_av_info: &Arc<AvInfo>) -> Result<(RetroVideo, EventLoop<()>), EventLoopError> {
-    let event_loop = EventLoopBuilder::new().build()?;
-    let (window, _display) = SimpleWindowBuilder::new().build(&event_loop);
+    let event_loop = EventLoop::new()?;
+    let window = winit::window::Window::new(&event_loop).expect("erro ao tentar cria um janela");
 
-    let vertex_buffer = {
-        glium::VertexBuffer::new(
-            &_display,
-            &[
-                Vertex {
-                    position: [-0.5, -0.5],
-                    // color: [0.0, 1.0, 0.0, 1.0],
-                },
-                Vertex {
-                    position: [0.0, 0.5],
-                    // color: [0.0, 0.0, 1.0, 1.0],
-                },
-                Vertex {
-                    position: [0.5, -0.5],
-                    // color: [1.0, 0.0, 0.0, 1.0],
-                },
-            ],
-        )
-        .unwrap()
-    };
+    //TODO: carregar as funções do opengl primeiro
 
-    let index_buffer = IndexBuffer::new(
-        &_display,
-        glium::index::PrimitiveType::TrianglesList,
-        &[0u16, 1, 2],
-    )
-    .unwrap();
+    let mut shader = Shader::default();
+    shader.init();
 
-    let program = Program::from_source(
-        &_display,
-        "
-        #version 330 core
-        in vec2 position;
-        uniform mat4 matrix;
-
-        void main() {
-            gl_Position = vec4(position, 0.0, 1.0) * matrix;
-        }
-        ",
-        "
-        #version 330 core
-        out vec4 FragColor;
-        void main() {
-            FragColor = vec4(0.8f, 0.3f, 0.2f, 1.0f);
-        }
-        ",
-        None,
-    )
-    .expect("erro ao tentar cria shader program");
-
-    Ok((
-        RetroVideo {
-            _display,
-            window,
-            program,
-            vertex_buffer,
-            index_buffer,
-        },
-        event_loop,
-    ))
+    Ok((RetroVideo { window, shader }, event_loop))
 }

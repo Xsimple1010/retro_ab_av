@@ -3,7 +3,10 @@
     "bindgen",
     "glutin",
     "Insntace",
-    "opengl"
+    "opengl",
+    "Programiv",
+    "rodio",
+    "Shaderiv"
   ],
   "files.associations": {
     "libretro.h": "c",
