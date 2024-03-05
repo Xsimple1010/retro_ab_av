@@ -3,7 +3,7 @@ use retro_ab::{
     test_tools,
 };
 use retro_ab_av::{
-    audio_sample_batch_callback, audio_sample_callback, event, keyboard, video_refresh_callback,
+    audio_sample_batch_callback, audio_sample_callback, video_refresh_callback, Event, Keycode,
 };
 use std::sync::Arc;
 
@@ -30,41 +30,24 @@ fn main() {
     core::init(&core_ctx).expect("Erro ao tentar inicializar o contexto");
     core::load_game(&core_ctx, "C:/WFL/roms/teste.sfc").expect("Erro ao tentar carrega a rom");
 
-    let (mut av_ctx, event_loop) =
-        retro_ab_av::init(Arc::clone(&core_ctx.core.av_info)).expect("msg");
+    let (mut av_ctx, mut event_pump) =
+        retro_ab_av::init(Arc::clone(&core_ctx.core.av_info)).expect("erro");
 
-    let result = event_loop.run(|event, window_target| {
-        match event {
-            event::Event::Resumed => {}
-            event::Event::Suspended => {}
-            event::Event::AboutToWait => {
-                av_ctx.video.window.request_redraw();
-                retro_ab::core::run(&core_ctx).expect("falha ao requisitar um novo frame");
-            }
-            event::Event::WindowEvent { event, .. } => match event {
-                event::WindowEvent::Resized(_new_size) => {
-                    // av_ctx.video.resize(new_size.into());
-                }
-                event::WindowEvent::RedrawRequested => {
-                    av_ctx.get_new_frame();
-                    // av_ctx.video.draw_new_frame();
-                }
-                event::WindowEvent::CloseRequested
-                | event::WindowEvent::KeyboardInput {
-                    event:
-                        event::KeyEvent {
-                            state: event::ElementState::Pressed,
-                            logical_key: keyboard::Key::Named(keyboard::NamedKey::Escape),
-                            ..
-                        },
+    'running: loop {
+        core::run(&core_ctx);
+        av_ctx.get_new_frame();
+
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
                     ..
-                } => window_target.exit(),
-                _ev => {}
-            },
-            _ => (),
-        };
-    });
-    result.unwrap();
+                } => break 'running,
+                _ => {}
+            }
+        }
+    }
 
     let _ = core::de_init(core_ctx);
     // retro_ab_av::de_init(av_ctx);

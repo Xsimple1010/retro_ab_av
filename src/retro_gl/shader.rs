@@ -1,4 +1,4 @@
-use std::ffi::CString;
+use std::{ffi::CString, ptr::null};
 
 use gl::{types::*, COMPILE_STATUS};
 
@@ -26,15 +26,15 @@ impl Drop for Shader {
 }
 
 impl Shader {
-    fn _compile(&self, shader_type: GLenum, source: &str) -> GLuint {
+    fn _compile(&self, shader_type: GLenum, source_code: &str) -> GLuint {
         unsafe {
             let shader = gl::CreateShader(shader_type);
 
-            let source = CString::new(source).expect("erro ao criar um c string");
+            let source = CString::new(source_code).expect("erro ao criar um c string");
             let source = source.as_c_str().as_ptr();
-            let len = 0;
 
-            gl::ShaderSource(shader, 1, &source, &len);
+            gl::ShaderSource(shader, 1, &source, null());
+            gl::CompileShader(shader);
 
             let mut status = 0;
             gl::GetShaderiv(shader, COMPILE_STATUS, &mut status);
@@ -60,12 +60,12 @@ impl Shader {
         #version 330 core
         in vec2 position;
         in vec2 texture_coords;
-        
+
         out vec2 v_tex_coords;
 
         void main() {
             gl_Position = vec4(position, 0.0, 1.0);
-            
+
             v_tex_coords = texture_coords;
         }
         ";
@@ -121,8 +121,8 @@ impl Shader {
             let param_name = CString::new("u_tex").unwrap();
             self.u_tex = gl::GetUniformLocation(self.program, param_name.as_ptr());
 
-            let param_name = CString::new("u_mvp").unwrap();
-            self.u_mvp = gl::GetUniformLocation(self.program, param_name.as_ptr());
+            // let param_name = CString::new("u_mvp").unwrap();
+            // self.u_mvp = gl::GetUniformLocation(self.program, param_name.as_ptr());
 
             gl::GenVertexArrays(1, &mut self.vao);
             gl::GenBuffers(1, &mut self.vbo);

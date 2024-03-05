@@ -1,5 +1,8 @@
 use retro_ab::core::AvInfo;
-use rodio::{buffer::SamplesBuffer, OutputStream, OutputStreamHandle, Sink};
+use sdl2::{
+    audio::{AudioQueue, AudioSpecDesired},
+    AudioSubsystem, Sdl,
+};
 use std::{
     ptr::{null, slice_from_raw_parts},
     sync::Arc,
@@ -31,32 +34,40 @@ struct AudioNewFrame {
 }
 
 pub struct RetroAudio {
-    _stream_handle: OutputStreamHandle,
-    _stream: OutputStream,
-    sink: Sink,
+    audio: AudioSubsystem,
+    spec: AudioSpecDesired,
+    device: AudioQueue<i16>,
 }
 
 impl RetroAudio {
-    pub fn resume_new_frame(&mut self, av_info: &Arc<AvInfo>) {
+    pub fn resume_new_frame(&mut self, av_info: &Arc<AvInfo>) -> Result<(), String> {
         unsafe {
             let data = &*slice_from_raw_parts(NEW_FRAME._data, NEW_FRAME.frames * 2);
 
-            let sample_buffer =
-                SamplesBuffer::new(2, *av_info.timing.sample_rate.lock().unwrap() as u32, data);
-
-            self.sink.append(sample_buffer);
+            self.device.queue_audio(data)?;
         }
+
+        Ok(())
     }
 }
 
-pub fn init() -> RetroAudio {
-    let (_stream, _stream_handle) = OutputStream::try_default().expect("msg");
+pub fn init(sdl: &Sdl, av_info: &AvInfo) -> Result<RetroAudio, String> {
+    let audio = sdl.audio()?;
 
-    let sink: Sink = Sink::try_new(&_stream_handle).expect("msg");
+    let spec = AudioSpecDesired {
+        channels: Some(2),
+        freq: Some(*av_info.timing.sample_rate.lock().unwrap() as i32),
+        samples: None,
+    };
 
-    RetroAudio {
-        _stream,
-        _stream_handle,
-        sink,
-    }
+    let device = audio
+        .open_queue::<i16, _>(None, &spec)
+        .expect("erro ao agenda a reprodução de audio");
+    device.resume();
+
+    Ok(RetroAudio {
+        audio,
+        device,
+        spec,
+    })
 }
