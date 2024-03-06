@@ -12,10 +12,7 @@ static mut NEW_FRAME: AudioNewFrame = AudioNewFrame {
 
 pub fn audio_sample_batch_callback(_data: *const i16, frames: usize) -> usize {
     unsafe {
-        NEW_FRAME = AudioNewFrame {
-            _data,
-            frames: frames.clone(),
-        };
+        NEW_FRAME = AudioNewFrame { _data, frames };
     }
 
     frames

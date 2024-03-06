@@ -53,7 +53,7 @@ impl Render {
                 gl::FLOAT,
                 gl::FALSE,
                 size_of::<Vertex>().try_into().unwrap(),
-                0 as *const _,
+                std::ptr::null(),
             );
 
             gl::EnableVertexAttribArray(self.shader.i_text_pos as GLuint);

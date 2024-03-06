@@ -38,7 +38,7 @@ impl RetroVideo {
         }
 
         self._window.gl_swap_window();
-        for _ in 0..38_900_00 {}
+        for _ in 0..3_890_000 {}
     }
 
     pub fn resize(&mut self, _new_size: (u32, u32)) {}
