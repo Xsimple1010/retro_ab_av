@@ -1,12 +1,15 @@
 {
   "cSpell.words": [
+    "BGRA",
     "bindgen",
     "glutin",
     "Insntace",
     "opengl",
     "Programiv",
+    "repr",
     "rodio",
-    "Shaderiv"
+    "Shaderiv",
+    "XRGB"
   ],
   "files.associations": {
     "libretro.h": "c",

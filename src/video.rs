@@ -3,14 +3,9 @@ use sdl2::{
     video::{GLContext, GLProfile, Window},
     Sdl, VideoSubsystem,
 };
-use std::{
-    ffi::c_uint,
-    os::raw::c_void,
-    ptr::{null, slice_from_raw_parts},
-    sync::Arc,
-};
+use std::{ffi::c_uint, os::raw::c_void, ptr::null, sync::Arc};
 
-use crate::retro_gl::shader::Shader;
+use crate::retro_gl::render::{NextFrame, Render};
 
 //
 static mut RAW_TEX_POINTER: NextFrame = NextFrame {
@@ -19,13 +14,6 @@ static mut RAW_TEX_POINTER: NextFrame = NextFrame {
     _height: 0,
     _width: 0,
 };
-
-struct NextFrame {
-    _data: *const c_void,
-    _width: c_uint,
-    _height: c_uint,
-    _pitch: usize,
-}
 
 pub fn video_refresh_callback(
     _data: *const c_void,
@@ -45,22 +33,20 @@ pub struct RetroVideo {
     _video: VideoSubsystem,
     _window: Window,
     _gl_ctx: GLContext,
-    _shader: Shader,
+    _render: Render,
 }
 
 impl RetroVideo {
     pub fn draw_new_frame(&mut self) {
         unsafe {
-            gl::ClearColor(0., 0., 0., 0.);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            self._render.draw_new_frame(&RAW_TEX_POINTER);
         }
 
         self._window.gl_swap_window();
-
-        for _ in 0..38_900_00 {}
+        // for _ in 0..45_900_00 {}
     }
 
-    pub fn resize(&mut self, new_size: (u32, u32)) {}
+    pub fn resize(&mut self, _new_size: (u32, u32)) {}
 }
 
 pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
@@ -86,9 +72,9 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
         Ok(_window) => {
             let _gl_ctx = _window.gl_create_context().unwrap();
             gl::load_with(|name| _video.gl_get_proc_address(name) as *const _);
+            _video.gl_set_swap_interval(1)?;
 
-            let mut _shader = Shader::default();
-            _shader.init();
+            let mut _render = Render::new(av_info).expect("erro ao tentar inicar o opengl");
 
             unsafe {
                 gl::ClearColor(0., 0., 0., 0.);
@@ -101,7 +87,7 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
                 _video,
                 _window,
                 _gl_ctx,
-                _shader,
+                _render,
             })
         }
         Err(e) => Err(e.to_string()),

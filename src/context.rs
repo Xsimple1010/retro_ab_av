@@ -18,8 +18,8 @@ impl Drop for RetroAvCtx {
 
 impl RetroAvCtx {
     pub fn get_new_frame(&mut self) -> Result<(), String> {
-        self._audio.resume_new_frame(&self.info)?;
         self.video.draw_new_frame();
+        self._audio.resume_new_frame(&self.info)?;
         Ok(())
     }
 }
