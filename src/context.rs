@@ -8,7 +8,6 @@ use crate::video::{self, RetroVideo};
 pub struct RetroAvCtx {
     pub video: RetroVideo,
     pub _audio: RetroAudio,
-    info: Arc<AvInfo>,
     _sdl: Sdl,
 }
 
@@ -19,7 +18,7 @@ impl Drop for RetroAvCtx {
 impl RetroAvCtx {
     pub fn get_new_frame(&mut self) -> Result<(), String> {
         self.video.draw_new_frame();
-        self._audio.resume_new_frame(&self.info)?;
+        self._audio.resume_new_frame()?;
         Ok(())
     }
 }
@@ -36,7 +35,6 @@ pub fn create(av_info: Arc<AvInfo>) -> Result<(RetroAvCtx, EventPump), String> {
         RetroAvCtx {
             video,
             _audio,
-            info: av_info,
             _sdl,
         },
         event_pump,

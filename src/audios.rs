@@ -3,10 +3,7 @@ use sdl2::{
     audio::{AudioQueue, AudioSpecDesired},
     AudioSubsystem, Sdl,
 };
-use std::{
-    ptr::{null, slice_from_raw_parts},
-    sync::Arc,
-};
+use std::ptr::{null, slice_from_raw_parts};
 
 static mut NEW_FRAME: AudioNewFrame = AudioNewFrame {
     _data: null(),
@@ -34,13 +31,13 @@ struct AudioNewFrame {
 }
 
 pub struct RetroAudio {
-    audio: AudioSubsystem,
-    spec: AudioSpecDesired,
+    _audio: AudioSubsystem,
+    _spec: AudioSpecDesired,
     device: AudioQueue<i16>,
 }
 
 impl RetroAudio {
-    pub fn resume_new_frame(&mut self, av_info: &Arc<AvInfo>) -> Result<(), String> {
+    pub fn resume_new_frame(&mut self) -> Result<(), String> {
         unsafe {
             let data = &*slice_from_raw_parts(NEW_FRAME._data, NEW_FRAME.frames * 2);
 
@@ -52,22 +49,22 @@ impl RetroAudio {
 }
 
 pub fn init(sdl: &Sdl, av_info: &AvInfo) -> Result<RetroAudio, String> {
-    let audio = sdl.audio()?;
+    let _audio = sdl.audio()?;
 
-    let spec = AudioSpecDesired {
+    let _spec = AudioSpecDesired {
         channels: Some(2),
         freq: Some(*av_info.timing.sample_rate.lock().unwrap() as i32),
         samples: None,
     };
 
-    let device = audio
-        .open_queue::<i16, _>(None, &spec)
+    let device = _audio
+        .open_queue::<i16, _>(None, &_spec)
         .expect("erro ao agenda a reprodução de audio");
     device.resume();
 
     Ok(RetroAudio {
-        audio,
+        _audio,
+        _spec,
         device,
-        spec,
     })
 }

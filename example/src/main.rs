@@ -34,8 +34,8 @@ fn main() {
         retro_ab_av::init(Arc::clone(&core_ctx.core.av_info)).expect("erro");
 
     'running: loop {
-        core::run(&core_ctx);
-        av_ctx.get_new_frame();
+        core::run(&core_ctx).expect("msg");
+        av_ctx.get_new_frame().expect("");
 
         for event in event_pump.poll_iter() {
             match event {

@@ -5,10 +5,12 @@
     "glutin",
     "Insntace",
     "opengl",
+    "Parameteri",
     "Programiv",
     "repr",
     "rodio",
     "Shaderiv",
+    "Storei",
     "XRGB"
   ],
   "files.associations": {

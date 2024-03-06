@@ -5,27 +5,22 @@ use sdl2::{
 };
 use std::{ffi::c_uint, os::raw::c_void, ptr::null, sync::Arc};
 
-use crate::retro_gl::render::{NextFrame, Render};
+use crate::retro_gl::{render::Render, RawTextureData};
 
 //
-static mut RAW_TEX_POINTER: NextFrame = NextFrame {
-    _data: null(),
-    _pitch: 0,
-    _height: 0,
-    _width: 0,
+static mut RAW_TEX_POINTER: RawTextureData = RawTextureData {
+    data: null(),
+    pitch: 0,
+    height: 0,
+    width: 0,
 };
 
-pub fn video_refresh_callback(
-    _data: *const c_void,
-    _width: c_uint,
-    _height: c_uint,
-    _pitch: usize,
-) {
+pub fn video_refresh_callback(data: *const c_void, width: c_uint, height: c_uint, pitch: usize) {
     unsafe {
-        RAW_TEX_POINTER._data = _data;
-        RAW_TEX_POINTER._height = _height;
-        RAW_TEX_POINTER._width = _width;
-        RAW_TEX_POINTER._pitch = _pitch;
+        RAW_TEX_POINTER.data = data;
+        RAW_TEX_POINTER.height = height;
+        RAW_TEX_POINTER.width = width;
+        RAW_TEX_POINTER.pitch = pitch;
     }
 }
 
@@ -43,7 +38,7 @@ impl RetroVideo {
         }
 
         self._window.gl_swap_window();
-        // for _ in 0..45_900_00 {}
+        for _ in 0..38_900_00 {}
     }
 
     pub fn resize(&mut self, _new_size: (u32, u32)) {}
@@ -74,7 +69,7 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
             gl::load_with(|name| _video.gl_get_proc_address(name) as *const _);
             _video.gl_set_swap_interval(1)?;
 
-            let mut _render = Render::new(av_info).expect("erro ao tentar inicar o opengl");
+            let mut _render = Render::new(av_info).expect("erro ao tentar inciar o opengl");
 
             unsafe {
                 gl::ClearColor(0., 0., 0., 0.);

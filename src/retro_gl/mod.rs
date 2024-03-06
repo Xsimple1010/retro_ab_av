@@ -1,3 +1,6 @@
-pub mod pixel;
+mod pixel;
+mod shader;
+mod texture;
+
 pub mod render;
-pub mod shader;
+pub use texture::RawTextureData;

@@ -1,38 +1,24 @@
-use core::ffi::{c_uint, c_void};
+use super::{
+    shader::Shader,
+    texture::{RawTextureData, Texture2D, TexturePosition},
+};
 use gl::{self, types::GLuint};
 use retro_ab::core::AvInfo;
 use std::{
     mem::{size_of, size_of_val},
-    ptr::null,
     sync::Arc,
 };
 
-use super::{pixel::Pixel, shader::Shader};
-
-pub struct NextFrame {
-    pub _data: *const c_void,
-    pub _width: c_uint,
-    pub _height: c_uint,
-    pub _pitch: usize,
-}
-
 pub struct Render {
     pub shader: Shader,
-    texture: GLuint,
-    pixel: Pixel,
+    texture: Texture2D,
     av_info: Arc<AvInfo>,
 }
 
-impl Drop for Render {
-    fn drop(&mut self) {
-        unsafe { gl::DeleteTextures(1, &self.texture) }
-    }
-}
-
 type Pos = [f32; 2];
-type TexPos = [f32; 2];
+
 #[repr(C, packed)]
-struct Vertex(Pos, TexPos);
+struct Vertex(Pos, TexturePosition);
 impl Render {
     fn refresh_vertex(&self) {
         unsafe {
@@ -85,33 +71,17 @@ impl Render {
         }
     }
 
-    pub fn draw_new_frame(&self, next_frame: &NextFrame) {
+    pub fn draw_new_frame(&self, next_frame: &RawTextureData) {
         unsafe {
             self.refresh_vertex();
 
-            let len = next_frame._pitch as i32 / self.pixel.bpm;
-            let wid = next_frame._width as i32;
-            let he = next_frame._height as i32;
+            self.texture.push(next_frame);
 
-            gl::BindTexture(gl::TEXTURE0, self.texture);
-            gl::PixelStorei(gl::UNPACK_ROW_LENGTH, len);
-            gl::TexSubImage2D(
-                gl::TEXTURE_2D,
-                0,
-                0,
-                0,
-                wid,
-                he,
-                self.pixel.typ,
-                self.pixel.format,
-                next_frame._data,
-            );
-            gl::Viewport(0, 0, wid, he);
+            gl::Viewport(0, 0, next_frame.width as i32, next_frame.height as i32);
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             gl::UseProgram(self.shader.program);
-            gl::ActiveTexture(gl::TEXTURE0);
-            gl::BindTexture(gl::TEXTURE_2D, self.texture);
+            self.texture.active();
 
             gl::BindVertexArray(self.shader.vao);
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
@@ -122,36 +92,10 @@ impl Render {
     }
 
     pub fn new(av_info: &Arc<AvInfo>) -> Result<Render, String> {
-        let mut texture = 0;
-        let pixel = Pixel::new(&av_info.video.pixel_format.lock().unwrap())?;
-
-        unsafe {
-            let geo = &av_info.video.geometry;
-
-            gl::GenTextures(1, &mut texture);
-            gl::BindTexture(gl::TEXTURE_2D, texture);
-
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-
-            gl::TexImage2D(
-                gl::TEXTURE_2D,
-                0,
-                gl::RGBA8 as i32,
-                *geo.max_height.lock().unwrap() as i32,
-                *geo.max_width.lock().unwrap() as i32,
-                0,
-                pixel.typ,
-                pixel.format,
-                null(),
-            );
-
-            gl::BindTexture(gl::TEXTURE_2D, 0)
-        }
+        let texture = Texture2D::new(av_info)?;
 
         Ok(Render {
             shader: Shader::new(),
-            pixel,
             texture,
             av_info: av_info.clone(),
         })
