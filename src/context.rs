@@ -1,6 +1,7 @@
 use retro_ab::core::AvInfo;
 use sdl2::{EventPump, Sdl};
 use std::sync::Arc;
+use std::time::Instant;
 
 use crate::audios::{self, RetroAudio};
 use crate::video::{self, RetroVideo};
@@ -17,8 +18,12 @@ impl Drop for RetroAvCtx {
 
 impl RetroAvCtx {
     pub fn get_new_frame(&mut self) -> Result<(), String> {
-        self.video.draw_new_frame();
+        let inicio = Instant::now();
         self._audio.resume_new_frame()?;
+        self.video.draw_new_frame();
+
+        let duracao = Instant::now() - inicio;
+        println!("Tempo de execução: {:?}", duracao);
         Ok(())
     }
 }

@@ -1,103 +1,130 @@
 use super::{
+    gl_buffer::GlBuffer,
     shader::Shader,
+    shader_program::ShaderProgram,
     texture::{RawTextureData, Texture2D, TexturePosition},
+    vertex_array::VertexArray,
 };
-use gl::{self, types::GLuint};
+use gl::{
+    self,
+    types::{GLint, GLuint},
+};
 use retro_ab::core::AvInfo;
-use std::{
-    mem::{size_of, size_of_val},
-    sync::Arc,
-};
+use std::mem::size_of;
+use std::sync::Arc;
 
 pub struct Render {
-    pub shader: Shader,
-    texture: Texture2D,
-    av_info: Arc<AvInfo>,
+    _program: ShaderProgram,
+    _texture: Texture2D,
+    _av_info: Arc<AvInfo>,
+    _i_pos: GLint,
+    _i_tex_pos: GLint,
+    _u_tex: GLint,
+    _vao: VertexArray,
+    _vbo: GlBuffer,
 }
 
 type Pos = [f32; 2];
-
 #[repr(C, packed)]
 struct Vertex(Pos, TexturePosition);
 impl Render {
     fn refresh_vertex(&self) {
-        unsafe {
-            let geo = &self.av_info.video.geometry;
+        let bottom = 0.365;
+        let right = 0.533;
 
-            let bottom =
-                *geo.base_width.lock().unwrap() as f32 / *geo.max_width.lock().unwrap() as f32;
-            let right =
-                *geo.base_height.lock().unwrap() as f32 / *geo.max_height.lock().unwrap() as f32;
+        let vertices: [Vertex; 4] = [
+            Vertex([-1.0, -1.0], [0.0, bottom]),
+            Vertex([-1.0, 1.0], [0.0, 0.0]),
+            Vertex([1.0, -1.0], [right, bottom]),
+            Vertex([1.0, 1.0], [right, 0.0]),
+        ];
 
-            let vertices: [Vertex; 4] = [
-                Vertex([-1.0, -1.0], [0.0, bottom]),
-                Vertex([-1.0, 1.0], [0.0, 0.0]),
-                Vertex([1.0, -1.0], [right, bottom]),
-                Vertex([1.0, 1.0], [right, 0.0]),
-            ];
+        self._vao.bind();
+        self._vbo.bind();
 
-            gl::BindVertexArray(self.shader.vao);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.shader.vbo);
+        self._vbo.set_data(vertices);
+        self._vao
+            .set_attribute::<Vertex>(self._i_pos as GLuint, 2, 0);
 
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                size_of_val(&vertices) as isize,
-                vertices.as_ptr().cast(),
-                gl::STREAM_DRAW,
-            );
+        self._vao.set_attribute::<Vertex>(
+            self._i_tex_pos as GLuint,
+            2,
+            (size_of::<f32>() * 2) as i32,
+        );
 
-            gl::EnableVertexAttribArray(self.shader.i_pos as GLuint);
-            gl::VertexAttribPointer(
-                self.shader.i_pos as GLuint,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                size_of::<Vertex>().try_into().unwrap(),
-                std::ptr::null(),
-            );
-
-            gl::EnableVertexAttribArray(self.shader.i_text_pos as GLuint);
-            gl::VertexAttribPointer(
-                self.shader.i_text_pos as GLuint,
-                2,
-                gl::FLOAT,
-                gl::FALSE,
-                size_of::<Vertex>().try_into().unwrap(),
-                (size_of::<f32>() * 2) as *const _,
-            );
-
-            gl::BindVertexArray(0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-        }
+        self._vao.un_bind();
+        self._vbo.un_bind();
     }
 
-    pub fn draw_new_frame(&self, next_frame: &RawTextureData) {
+    pub fn draw_new_frame(&self, next_frame: &RawTextureData, width: i32, height: i32) {
         unsafe {
             self.refresh_vertex();
 
-            self.texture.push(next_frame);
-
-            gl::Viewport(0, 0, next_frame.width as i32, next_frame.height as i32);
+            gl::Viewport(0, 0, width, height);
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
-            gl::UseProgram(self.shader.program);
-            self.texture.active();
+            self._texture.push(next_frame);
 
-            gl::BindVertexArray(self.shader.vao);
+            self._program.use_program();
+            self._texture.active();
+
+            self._vao.bind();
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-
-            gl::BindVertexArray(0);
-            gl::UseProgram(0);
+            self._vao.un_bind();
+            self._program.un_use_program();
         }
     }
 
     pub fn new(av_info: &Arc<AvInfo>) -> Result<Render, String> {
+        let vertex_shader_src = "
+        #version 330 core
+        in vec2 i_pos;
+        in vec2 i_tex_pos;
+
+        out vec2 f_t_pos;
+
+        void main() {
+            f_t_pos = i_tex_pos;
+            gl_Position = vec4(i_pos, 0.0, 1.0);
+        }
+        ";
+
+        let fragment_shader_src = "
+        #version 330 core
+        in vec2 f_t_pos;
+        
+        out vec4 FragColor;
+        
+        uniform sampler2D u_tex;
+
+        void main() {
+            FragColor = texture2D(u_tex, f_t_pos);
+        }
+        ";
+
+        let vertex_shader = Shader::new(gl::VERTEX_SHADER, vertex_shader_src);
+        let frag_shader = Shader::new(gl::FRAGMENT_SHADER, fragment_shader_src);
+
+        let program = ShaderProgram::new(&[vertex_shader, frag_shader]);
+
+        let i_pos = program.get_attribute("i_pos");
+        let i_tex_pos = program.get_attribute("i_tex_pos");
+        let u_tex = program.get_uniform("u_tex");
+
         let texture = Texture2D::new(av_info)?;
 
+        let vao = VertexArray::new();
+        let vbo = GlBuffer::new(gl::ARRAY_BUFFER);
+
         Ok(Render {
-            shader: Shader::new(),
-            texture,
-            av_info: av_info.clone(),
+            _program: program,
+            _texture: texture,
+            _i_pos: i_pos,
+            _i_tex_pos: i_tex_pos,
+            _u_tex: u_tex,
+            _vao: vao,
+            _vbo: vbo,
+            _av_info: av_info.clone(),
         })
     }
 }

@@ -1,3 +1,4 @@
+use crate::retro_gl::{render::Render, RawTextureData};
 use retro_ab::core::AvInfo;
 use sdl2::{
     video::{GLContext, GLProfile, Window},
@@ -5,9 +6,6 @@ use sdl2::{
 };
 use std::{ffi::c_uint, os::raw::c_void, ptr::null, sync::Arc};
 
-use crate::retro_gl::{render::Render, RawTextureData};
-
-//
 static mut RAW_TEX_POINTER: RawTextureData = RawTextureData {
     data: null(),
     pitch: 0,
@@ -34,11 +32,13 @@ pub struct RetroVideo {
 impl RetroVideo {
     pub fn draw_new_frame(&mut self) {
         unsafe {
-            self._render.draw_new_frame(&RAW_TEX_POINTER);
+            let (width, height) = self._window.size();
+
+            self._render
+                .draw_new_frame(&RAW_TEX_POINTER, width as i32, height as i32);
         }
 
         self._window.gl_swap_window();
-        for _ in 0..3_890_000 {}
     }
 
     pub fn resize(&mut self, _new_size: (u32, u32)) {}
@@ -60,23 +60,24 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
             *geo.base_height.lock().unwrap(),
         )
         .opengl()
+        .resizable()
         .position_centered()
         .build();
 
     match win_result {
-        Ok(_window) => {
+        Ok(mut _window) => {
             let _gl_ctx = _window.gl_create_context().unwrap();
             gl::load_with(|name| _video.gl_get_proc_address(name) as *const _);
             _video.gl_set_swap_interval(1)?;
 
+            _window
+                .set_minimum_size(
+                    *av_info.video.geometry.base_width.lock().unwrap(),
+                    *av_info.video.geometry.base_height.lock().unwrap(),
+                )
+                .expect("nao e possível definir um tamanho mínimo a janela");
+
             let mut _render = Render::new(av_info).expect("erro ao tentar inciar o opengl");
-
-            unsafe {
-                gl::ClearColor(0., 0., 0., 0.);
-                gl::Clear(gl::COLOR_BUFFER_BIT);
-            }
-
-            _window.gl_swap_window();
 
             Ok(RetroVideo {
                 _video,
