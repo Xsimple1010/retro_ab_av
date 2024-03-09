@@ -9,7 +9,7 @@ use gl::{
     self,
     types::{GLint, GLuint},
 };
-use retro_ab::core::AvInfo;
+use retro_ab::core::{AvInfo, Geometry};
 use std::mem::size_of;
 use std::sync::Arc;
 
@@ -27,9 +27,9 @@ type Pos = [f32; 2];
 #[repr(C, packed)]
 struct Vertex(Pos, TexturePosition);
 impl Render {
-    fn refresh_vertex(&self) {
-        let bottom = 0.365;
-        let right = 0.533;
+    fn refresh_vertex(&self, geo: &Geometry, tex_width: f32, tex_height: f32) {
+        let bottom = tex_height / *geo.max_height.lock().unwrap() as f32;
+        let right = tex_width / *geo.max_width.lock().unwrap() as f32;
 
         let vertices: [Vertex; 4] = [
             Vertex([-1.0, -1.0], [0.0, bottom]),
@@ -55,15 +55,20 @@ impl Render {
         self._vbo.un_bind();
     }
 
-    pub fn draw_new_frame(&self, next_frame: &RawTextureData, width: i32, height: i32) {
-        unsafe {
-            self.refresh_vertex();
+    pub fn draw_new_frame(
+        &self,
+        next_frame: &RawTextureData,
+        geo: &Geometry,
+        win_width: i32,
+        win_height: i32,
+    ) {
+        self.refresh_vertex(geo, next_frame.width as f32, next_frame.height as f32);
 
-            gl::Viewport(0, 0, width, height);
+        unsafe {
+            gl::Viewport(0, 0, win_width, win_height);
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
             self._texture.push(next_frame);
-
             self._program.use_program();
             self._texture.active();
 

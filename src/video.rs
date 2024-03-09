@@ -35,8 +35,12 @@ impl RetroVideo {
         unsafe {
             let (width, height) = self._window.size();
 
-            self._render
-                .draw_new_frame(&RAW_TEX_POINTER, width as i32, height as i32);
+            self._render.draw_new_frame(
+                &RAW_TEX_POINTER,
+                &self._av_info.video.geometry,
+                width as i32,
+                height as i32,
+            );
         }
 
         self._window.gl_swap_window();

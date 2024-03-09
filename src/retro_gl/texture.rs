@@ -52,6 +52,7 @@ impl Texture2D {
                 self.pixel.format,
                 raw_data.data,
             );
+            gl::BindTexture(gl::TEXTURE0, 0);
         }
     }
 
@@ -71,8 +72,8 @@ impl Texture2D {
                 gl::TEXTURE_2D,
                 0,
                 gl::RGBA8 as i32,
-                *geo.max_height.lock().unwrap() as i32,
                 *geo.max_width.lock().unwrap() as i32,
+                *geo.max_height.lock().unwrap() as i32,
                 0,
                 pixel.typ,
                 pixel.format,
