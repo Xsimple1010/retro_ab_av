@@ -1,7 +1,7 @@
 use retro_ab::core::AvInfo;
 use sdl2::{EventPump, Sdl};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use crate::audios::{self, RetroAudio};
 use crate::video::{self, RetroVideo};
@@ -9,6 +9,7 @@ use crate::video::{self, RetroVideo};
 pub struct RetroAvCtx {
     pub video: RetroVideo,
     pub _audio: RetroAudio,
+    av_info: Arc<AvInfo>,
     _sdl: Sdl,
 }
 
@@ -18,12 +19,26 @@ impl Drop for RetroAvCtx {
 
 impl RetroAvCtx {
     pub fn get_new_frame(&mut self) -> Result<(), String> {
-        let inicio = Instant::now();
+        let start = Instant::now();
+
         self._audio.resume_new_frame()?;
         self.video.draw_new_frame();
 
-        let duracao = Instant::now() - inicio;
-        println!("Tempo de execução: {:?}", duracao);
+        //isso trava a taxa de quandros pelo o que foi fornecido pelo núcleo
+        let end = Instant::now() - start;
+        let fps_delay = (911.1 / *self.av_info.timing.fps.lock().unwrap() as f32
+            - end.as_millis() as f32)
+            * 1_000_000.0 as f32;
+
+        if end.as_nanos() as f32 > fps_delay {
+            std::thread::sleep(Duration::from_millis(16));
+            return Ok(());
+        }
+
+        std::thread::sleep(Duration::from_nanos(
+            fps_delay as u64 - end.as_nanos() as u64,
+        ));
+
         Ok(())
     }
 }
@@ -41,6 +56,7 @@ pub fn create(av_info: Arc<AvInfo>) -> Result<(RetroAvCtx, EventPump), String> {
             video,
             _audio,
             _sdl,
+            av_info: av_info.clone(),
         },
         event_pump,
     ))

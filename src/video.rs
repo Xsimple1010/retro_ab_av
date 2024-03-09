@@ -27,6 +27,7 @@ pub struct RetroVideo {
     _window: Window,
     _gl_ctx: GLContext,
     _render: Render,
+    _av_info: Arc<AvInfo>,
 }
 
 impl RetroVideo {
@@ -68,7 +69,7 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
         Ok(mut _window) => {
             let _gl_ctx = _window.gl_create_context().unwrap();
             gl::load_with(|name| _video.gl_get_proc_address(name) as *const _);
-            _video.gl_set_swap_interval(1)?;
+            // _video.gl_set_swap_interval(1)?;
 
             _window
                 .set_minimum_size(
@@ -84,6 +85,7 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
                 _window,
                 _gl_ctx,
                 _render,
+                _av_info: av_info.clone(),
             })
         }
         Err(e) => Err(e.to_string()),

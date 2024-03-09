@@ -4,6 +4,7 @@
     "bindgen",
     "glutin",
     "Insntace",
+    "nanos",
     "opengl",
     "Parameteri",
     "Programiv",

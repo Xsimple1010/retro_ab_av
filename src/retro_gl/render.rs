@@ -16,7 +16,6 @@ use std::sync::Arc;
 pub struct Render {
     _program: ShaderProgram,
     _texture: Texture2D,
-    _av_info: Arc<AvInfo>,
     _i_pos: GLint,
     _i_tex_pos: GLint,
     _u_tex: GLint,
@@ -124,7 +123,6 @@ impl Render {
             _u_tex: u_tex,
             _vao: vao,
             _vbo: vbo,
-            _av_info: av_info.clone(),
         })
     }
 }
