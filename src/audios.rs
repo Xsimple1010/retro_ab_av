@@ -51,7 +51,7 @@ pub fn init(sdl: &Sdl, av_info: &AvInfo) -> Result<RetroAudio, String> {
     let _spec = AudioSpecDesired {
         channels: Some(2),
         freq: Some(*av_info.timing.sample_rate.lock().unwrap() as i32),
-        samples: None,
+        samples: Some(4096),
     };
 
     let device = _audio
