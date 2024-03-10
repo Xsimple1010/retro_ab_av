@@ -2,7 +2,8 @@ use super::{
     gl_buffer::GlBuffer,
     shader::Shader,
     shader_program::ShaderProgram,
-    texture::{RawTextureData, Texture2D, TexturePosition},
+    texture::{RawTextureData, Texture2D},
+    vertex::{new_vertex, GlVertex},
     vertex_array::VertexArray,
 };
 use gl::{
@@ -23,29 +24,31 @@ pub struct Render {
     _vbo: GlBuffer,
 }
 
-type Pos = [f32; 2];
-#[repr(C, packed)]
-struct Vertex(Pos, TexturePosition);
 impl Render {
-    fn refresh_vertex(&self, geo: &Geometry, tex_width: f32, tex_height: f32) {
-        let bottom = tex_height / *geo.max_height.lock().unwrap() as f32;
-        let right = tex_width / *geo.max_width.lock().unwrap() as f32;
-
-        let vertices: [Vertex; 4] = [
-            Vertex([-1.0, -1.0], [0.0, bottom]),
-            Vertex([-1.0, 1.0], [0.0, 0.0]),
-            Vertex([1.0, -1.0], [right, bottom]),
-            Vertex([1.0, 1.0], [right, 0.0]),
-        ];
+    fn refresh_vertex(
+        &self,
+        geo: &Geometry,
+        origin_w: f32,
+        origin_h: f32,
+        window_w: i32,
+        window_h: i32,
+    ) {
+        let vertex = new_vertex(
+            geo,
+            window_w as f32,
+            window_h as f32,
+            origin_w as f32,
+            origin_h as f32,
+        );
 
         self._vao.bind();
         self._vbo.bind();
 
-        self._vbo.set_data(vertices);
+        self._vbo.set_data(vertex);
         self._vao
-            .set_attribute::<Vertex>(self._i_pos as GLuint, 2, 0);
+            .set_attribute::<GlVertex>(self._i_pos as GLuint, 2, 0);
 
-        self._vao.set_attribute::<Vertex>(
+        self._vao.set_attribute::<GlVertex>(
             self._i_tex_pos as GLuint,
             2,
             (size_of::<f32>() * 2) as i32,
@@ -62,7 +65,13 @@ impl Render {
         win_width: i32,
         win_height: i32,
     ) {
-        self.refresh_vertex(geo, next_frame.width as f32, next_frame.height as f32);
+        self.refresh_vertex(
+            geo,
+            next_frame.width as f32,
+            next_frame.height as f32,
+            win_width,
+            win_height,
+        );
 
         unsafe {
             gl::Viewport(0, 0, win_width, win_height);

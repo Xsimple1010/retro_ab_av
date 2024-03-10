@@ -3,6 +3,7 @@ mod pixel;
 mod shader;
 mod shader_program;
 mod texture;
+mod vertex;
 mod vertex_array;
 
 pub mod render;

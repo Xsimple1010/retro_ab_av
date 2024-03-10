@@ -18,6 +18,26 @@ impl Drop for RetroAvCtx {
 }
 
 impl RetroAvCtx {
+    #[doc = "cria uma nova instancia de RetroAvCtx. todas as instancias so podem ser criadas dentro da thread principal!"]
+    pub fn new(av_info: Arc<AvInfo>) -> Result<(RetroAvCtx, EventPump), String> {
+        let _sdl = sdl2::init()?;
+
+        let event_pump = _sdl.event_pump()?;
+
+        let video = video::init(&_sdl, &av_info)?;
+        let _audio = audios::init(&_sdl, &av_info)?;
+
+        Ok((
+            RetroAvCtx {
+                video,
+                _audio,
+                _sdl,
+                av_info: av_info.clone(),
+            },
+            event_pump,
+        ))
+    }
+
     pub fn get_new_frame(&mut self) -> Result<(), String> {
         let start = Instant::now();
 
@@ -26,7 +46,7 @@ impl RetroAvCtx {
 
         //isso trava a taxa de quandros pelo o que foi fornecido pelo núcleo
         let end = Instant::now() - start;
-        let fps_delay = (911.1 / *self.av_info.timing.fps.lock().unwrap() as f32
+        let fps_delay = (915.0 / *self.av_info.timing.fps.lock().unwrap() as f32
             - end.as_millis() as f32)
             * 1_000_000.0 as f32;
 
@@ -41,23 +61,4 @@ impl RetroAvCtx {
 
         Ok(())
     }
-}
-
-pub fn create(av_info: Arc<AvInfo>) -> Result<(RetroAvCtx, EventPump), String> {
-    let _sdl = sdl2::init()?;
-
-    let event_pump = _sdl.event_pump()?;
-
-    let video = video::init(&_sdl, &av_info)?;
-    let _audio = audios::init(&_sdl, &av_info)?;
-
-    Ok((
-        RetroAvCtx {
-            video,
-            _audio,
-            _sdl,
-            av_info: av_info.clone(),
-        },
-        event_pump,
-    ))
 }

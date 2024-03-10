@@ -3,7 +3,8 @@ use retro_ab::{
     test_tools,
 };
 use retro_ab_av::{
-    audio_sample_batch_callback, audio_sample_callback, video_refresh_callback, Event, Keycode,
+    audio_sample_batch_callback, audio_sample_callback, context::RetroAvCtx,
+    video_refresh_callback, Event, Keycode,
 };
 use std::sync::Arc;
 
@@ -28,10 +29,10 @@ fn main() {
     .expect("Erro ao tentar criar RetroContext: ");
 
     core::init(&core_ctx).expect("Erro ao tentar inicializar o contexto");
-    core::load_game(&core_ctx, "C:/WFL/roms/teste.sfc").expect("Erro ao tentar carrega a rom");
+    core::load_game(&core_ctx, "C:/WFL/roms/sno.sfc").expect("Erro ao tentar carrega a rom");
 
     let (mut av_ctx, mut event_pump) =
-        retro_ab_av::init(Arc::clone(&core_ctx.core.av_info)).expect("erro");
+        RetroAvCtx::new(Arc::clone(&core_ctx.core.av_info)).expect("erro");
 
     'running: loop {
         core::run(&core_ctx).expect("msg");
