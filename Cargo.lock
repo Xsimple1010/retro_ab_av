@@ -280,6 +280,7 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 [[package]]
 name = "retro_ab"
 version = "0.1.0"
+source = "git+https://github.com/Xsimple1010/retro_ab_rs.git#c581d4f3c6f1abd2332fa67de7a2b4961acecdf9"
 dependencies = [
  "bindgen",
  "cc",
