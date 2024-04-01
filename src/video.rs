@@ -65,6 +65,7 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
             *geo.base_height.lock().unwrap(),
         )
         .opengl()
+        .maximized()
         .resizable()
         .position_centered()
         .build();
