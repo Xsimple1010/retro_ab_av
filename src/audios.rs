@@ -1,9 +1,9 @@
 use retro_ab::core::AvInfo;
-use sdl2::{
-    audio::{AudioQueue, AudioSpecDesired},
-    AudioSubsystem, Sdl,
+use rodio::{buffer::SamplesBuffer, OutputStream, OutputStreamHandle, Sink};
+use std::{
+    ptr::{null, slice_from_raw_parts},
+    sync::Arc,
 };
-use std::ptr::{null, slice_from_raw_parts};
 
 static mut NEW_FRAME: AudioNewFrame = AudioNewFrame {
     _data: null(),
@@ -28,40 +28,33 @@ struct AudioNewFrame {
 }
 
 pub struct RetroAudio {
-    _audio: AudioSubsystem,
-    _spec: AudioSpecDesired,
-    device: AudioQueue<i16>,
+    _stream_handle: OutputStreamHandle,
+    _stream: OutputStream,
+    av_info: Arc<AvInfo>,
+    sink: Sink,
 }
 
 impl RetroAudio {
-    pub fn resume_new_frame(&mut self) -> Result<(), String> {
-        unsafe {
-            let data = &*slice_from_raw_parts(NEW_FRAME._data, NEW_FRAME.frames * 2);
+    pub fn resume_new_frame(&mut self) {
+        if let Ok(sample_rate) = self.av_info.timing.sample_rate.try_lock() {
+            let data = unsafe { &*slice_from_raw_parts(NEW_FRAME._data, NEW_FRAME.frames * 2) };
 
-            self.device.queue_audio(data)?;
+            let sample_buffer = SamplesBuffer::new(2, *sample_rate as u32, data);
+
+            self.sink.append(sample_buffer);
         }
-
-        Ok(())
     }
 }
 
-pub fn init(sdl: &Sdl, av_info: &AvInfo) -> Result<RetroAudio, String> {
-    let _audio = sdl.audio()?;
+pub fn init(av_info: Arc<AvInfo>) -> Result<RetroAudio, String> {
+    let (stream, stream_handle) = OutputStream::try_default().expect("msg");
 
-    let _spec = AudioSpecDesired {
-        channels: Some(2),
-        freq: Some(*av_info.timing.sample_rate.lock().unwrap() as i32),
-        samples: Some(4096),
-    };
-
-    let device = _audio
-        .open_queue::<i16, _>(None, &_spec)
-        .expect("erro ao agenda a reprodução de audio");
-    device.resume();
+    let sink: Sink = Sink::try_new(&stream_handle).expect("msg");
 
     Ok(RetroAudio {
-        _audio,
-        _spec,
-        device,
+        _stream: stream,
+        _stream_handle: stream_handle,
+        av_info: av_info,
+        sink,
     })
 }
