@@ -1,8 +1,11 @@
 use std::ffi::CString;
 
-use gl::types::*;
+use crate::retro_gl::gl::gl::types::GLint;
 
-use super::shader::Shader;
+use super::{
+    gl::gl::{self, types::GLuint},
+    shader::Shader,
+};
 
 pub struct ShaderProgram {
     id: GLuint,

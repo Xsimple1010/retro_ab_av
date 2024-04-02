@@ -1,3 +1,4 @@
+pub mod gl;
 mod gl_buffer;
 mod pixel;
 mod shader;

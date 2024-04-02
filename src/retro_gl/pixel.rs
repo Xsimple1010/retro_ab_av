@@ -1,6 +1,7 @@
-use gl::types::GLuint;
 use retro_ab::core::retro_pixel_format;
 use std::mem::size_of;
+
+use super::gl::gl::{self, types::GLuint};
 
 pub struct Pixel {
     pub format: GLuint,

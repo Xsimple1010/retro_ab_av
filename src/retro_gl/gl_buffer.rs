@@ -1,5 +1,6 @@
-use gl::types::GLuint;
 use std::mem::size_of_val;
+
+use super::gl::gl::{self, types::GLuint};
 
 pub struct GlBuffer {
     id: GLuint,

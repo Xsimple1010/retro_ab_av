@@ -1,4 +1,8 @@
 use super::{
+    gl::gl::{
+        self,
+        types::{GLint, GLuint},
+    },
     gl_buffer::GlBuffer,
     shader::Shader,
     shader_program::ShaderProgram,
@@ -6,13 +10,10 @@ use super::{
     vertex::{new_vertex, GlVertex},
     vertex_array::VertexArray,
 };
-use gl::{
-    self,
-    types::{GLint, GLuint},
-};
+use glutin::display::{Display, GlDisplay};
 use retro_ab::core::{AvInfo, Geometry};
-use std::mem::size_of;
 use std::sync::Arc;
+use std::{ffi::CString, mem::size_of};
 
 pub struct Render {
     _program: ShaderProgram,
@@ -37,8 +38,8 @@ impl Render {
             geo,
             window_w as f32,
             window_h as f32,
-            origin_w as f32,
-            origin_h as f32,
+            origin_w,
+            origin_h,
         );
 
         self._vao.bind();
@@ -88,7 +89,12 @@ impl Render {
         }
     }
 
-    pub fn new(av_info: &Arc<AvInfo>) -> Result<Render, String> {
+    pub fn new(av_info: &Arc<AvInfo>, gl_display: &Display) -> Result<Render, String> {
+        gl::load_with(|symbol| {
+            let symbol = CString::new(symbol).unwrap();
+            gl_display.get_proc_address(symbol.as_c_str()).cast()
+        });
+
         let vertex_shader_src = "
         #version 330 core
         in vec2 i_pos;

@@ -1,5 +1,10 @@
-use gl::{types::*, COMPILE_STATUS};
+use gl::COMPILE_STATUS;
 use std::{ffi::CString, ptr::null};
+
+use super::gl::gl::{
+    self,
+    types::{GLenum, GLuint},
+};
 
 #[derive(Debug)]
 pub struct Shader {

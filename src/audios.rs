@@ -46,7 +46,7 @@ impl RetroAudio {
     }
 }
 
-pub fn init(av_info: Arc<AvInfo>) -> Result<RetroAudio, String> {
+pub fn init(av_info: &Arc<AvInfo>) -> Result<RetroAudio, String> {
     let (stream, stream_handle) = OutputStream::try_default().expect("msg");
 
     let sink: Sink = Sink::try_new(&stream_handle).expect("msg");
@@ -54,7 +54,7 @@ pub fn init(av_info: Arc<AvInfo>) -> Result<RetroAudio, String> {
     Ok(RetroAudio {
         _stream: stream,
         _stream_handle: stream_handle,
-        av_info: av_info,
+        av_info: av_info.clone(),
         sink,
     })
 }

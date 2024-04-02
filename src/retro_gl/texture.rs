@@ -1,4 +1,4 @@
-use super::pixel::Pixel;
+use super::{gl::gl, pixel::Pixel};
 use gl::types::GLuint;
 use retro_ab::core::AvInfo;
 use std::{

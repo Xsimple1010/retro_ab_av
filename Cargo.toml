@@ -6,11 +6,38 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["egl", "glx", "x11", "wayland", "wgl"]
+egl = ["glutin-winit/egl", "png"]
+glx = ["glutin-winit/glx"]
+wgl = ["glutin-winit/wgl"]
+x11 = ["glutin-winit/x11"]
+wayland = [
+    "glutin-winit/wayland",
+    "winit/wayland-dlopen",
+    "winit/wayland-csd-adwaita",
+]
+
+
 [dependencies]
-gl = "0.14.0"
-sdl2 = "0.36.0"
 retro_ab = { git = "https://github.com/Xsimple1010/retro_ab_rs.git" }
 rodio = "0.17.3"
+glutin = { version = "*", default-features = false }
+glutin-winit = { version = "*", default-features = false }
+png = { version = "0.17.6", optional = true }
+raw-window-handle = "0.5"
+winit = { version = "0.29.2", default-features = false, features = ["rwh_05"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+winit = { version = "0.29.2", default-features = false, features = [
+    "android-native-activity",
+    "rwh_05",
+] }
+
+[build-dependencies]
+gl_generator = "0.14"
+cfg_aliases = "0.1.1"
+
 
 [[example]]
 name = "example"

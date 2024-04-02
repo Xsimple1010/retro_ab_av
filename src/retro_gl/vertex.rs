@@ -62,8 +62,8 @@ fn resize_vertex_to_aspect(
 
     if right > 1.0 {
         let rest = right - 1.0;
-        right = right - rest;
-        bottom = bottom - rest;
+        right -= rest;
+        bottom -= rest;
     }
 
     (right, bottom)
