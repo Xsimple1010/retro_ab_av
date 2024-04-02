@@ -12,3 +12,4 @@ pub mod video;
 pub mod context;
 
 pub use audios::{audio_sample_batch_callback, audio_sample_callback};
+pub use video::video_refresh_callback;

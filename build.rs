@@ -3,7 +3,7 @@ use std::fs::File;
 use std::path::PathBuf;
 
 use cfg_aliases::cfg_aliases;
-use gl_generator::{Api, Fallbacks, GlobalGenerator, Profile, Registry, StructGenerator};
+use gl_generator::{Api, Fallbacks, GlobalGenerator, Profile, Registry};
 
 fn main() {
     // XXX this is taken from glutin/build.rs.

@@ -1,33 +1,139 @@
 use std::error::Error;
-use std::ffi::{CStr, CString};
-use std::num::NonZeroU32;
-use std::ops::Deref;
+use std::ffi::{c_uint};
+
+
+use std::os::raw::c_void;
+use std::ptr::null;
 use std::sync::Arc;
 
 use raw_window_handle::HasRawWindowHandle;
 use retro_ab::core::AvInfo;
-use winit::event::{Event, KeyEvent, WindowEvent};
-use winit::keyboard::{Key, NamedKey};
-use winit::window::WindowBuilder;
+use winit::dpi::PhysicalSize;
+
+use winit::event_loop::{EventLoop, EventLoopBuilder, EventLoopWindowTarget};
+
+use winit::window::{Window, WindowBuilder};
 
 use glutin::config::{Config, ConfigTemplateBuilder};
-use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
-use glutin::display::GetGlDisplay;
+use glutin::context::{
+    ContextApi, ContextAttributesBuilder, NotCurrentContext, PossiblyCurrentContext, Version,
+};
+use glutin::display::{Display, GetGlDisplay};
 use glutin::prelude::*;
-use glutin::surface::SwapInterval;
-
+use glutin::surface::{Surface, WindowSurface};
 use glutin_winit::{self, DisplayBuilder, GlWindow};
 
+use crate::retro_gl::gl::gl_config_picker;
 use crate::retro_gl::render::Render;
+use crate::retro_gl::RawTextureData;
 
-pub fn tete(event_loop: winit::event_loop::EventLoop<()>) -> Result<(), Box<dyn Error>> {
+static mut RAW_TEX_POINTER: RawTextureData = RawTextureData {
+    data: null(),
+    pitch: 0,
+    height: 0,
+    width: 0,
+};
+
+pub fn video_refresh_callback(data: *const c_void, width: c_uint, height: c_uint, pitch: usize) {
+    unsafe {
+        RAW_TEX_POINTER.data = data;
+        RAW_TEX_POINTER.height = height;
+        RAW_TEX_POINTER.width = width;
+        RAW_TEX_POINTER.pitch = pitch;
+    }
+}
+
+pub struct RetroVideo {
+    window: Option<Window>,
+    pub las_window_size: PhysicalSize<u32>,
+    gl_config: Config,
+    not_current_gl_context: Option<NotCurrentContext>,
+    av_info: Arc<AvInfo>,
+    render: Option<Render>,
+    gl_display: Display,
+    pub state: Option<(PossiblyCurrentContext, Surface<WindowSurface>, Window)>,
+}
+
+impl RetroVideo {
+    pub fn draw_new_frame(&mut self) {
+        unsafe {
+            // let (width, height) = self.window.();
+
+            if let Some(render) = &mut self.render {
+                render.draw_new_frame(
+                    &RAW_TEX_POINTER,
+                    &self.av_info.video.geometry,
+                    self.las_window_size.width as i32,
+                    self.las_window_size.height as i32,
+                );
+            }
+        }
+    }
+
+    pub fn resume(&mut self, window_target: &EventLoopWindowTarget<()>) {
+        #[cfg(android_platform)]
+        println!("Android window available");
+
+        let window = self.window.take().unwrap_or_else(|| {
+            let window_builder = WindowBuilder::new()
+                .with_transparent(true)
+                .with_title("Glutin triangle gradient example (press Escape to exit)");
+            glutin_winit::finalize_window(window_target, window_builder, &self.gl_config).unwrap()
+        });
+
+        let attrs = window.build_surface_attributes(Default::default());
+        let gl_surface = unsafe {
+            self.gl_config
+                .display()
+                .create_window_surface(&self.gl_config, &attrs)
+                .unwrap()
+        };
+
+        let gl_context: PossiblyCurrentContext = self
+            .not_current_gl_context
+            .take()
+            .unwrap()
+            .make_current(&gl_surface)
+            .unwrap();
+
+        self.render
+            .replace(Render::new(&self.av_info, &self.gl_display).unwrap());
+
+        // if let Err(res) = gl_surface
+        //     .set_swap_interval(&gl_context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()))
+        // {
+        //     eprintln!("Error setting vsync: {res:?}");
+        // }
+
+        assert!(self
+            .state
+            .replace((gl_context, gl_surface, window))
+            .is_none());
+    }
+
+    pub fn suspended(&mut self) {
+        println!("Android window removed");
+
+        let (gl_context, ..) = self.state.take().unwrap();
+
+        assert!(self
+            .not_current_gl_context
+            .replace(gl_context.make_not_current().unwrap())
+            .is_none());
+    }
+}
+
+pub fn init(av_info: Arc<AvInfo>) -> Result<(RetroVideo, EventLoop<()>), Box<dyn Error>> {
+    let event_loop = EventLoopBuilder::new().build().unwrap();
     // Only Windows requires the window to be present before creating the display.
     // Other platforms don't really need one.
     //
     // XXX if you don't care about running on Android or so you can safely remove
     // this condition and always pass the window builder.
     let window_builder = cfg!(wgl_backend).then(|| {
-        WindowBuilder::new().with_title("Glutin triangle gradient example (press Escape to exit)")
+        WindowBuilder::new()
+            .with_title("Glutin triangle gradient example (press Escape to exit)")
+            .with_maximized(true)
     });
 
     // The template will match only the configurations supporting rendering
@@ -42,7 +148,7 @@ pub fn tete(event_loop: winit::event_loop::EventLoop<()>) -> Result<(), Box<dyn 
 
     let display_builder = DisplayBuilder::new().with_window_builder(window_builder);
 
-    let (mut window, gl_config) = display_builder.build(&event_loop, template, gl_config_picker)?;
+    let (window, gl_config) = display_builder.build(&event_loop, template, gl_config_picker)?;
 
     println!("Picked a config with {} samples", gl_config.num_samples());
 
@@ -67,7 +173,7 @@ pub fn tete(event_loop: winit::event_loop::EventLoop<()>) -> Result<(), Box<dyn 
         .with_context_api(ContextApi::OpenGl(Some(Version::new(2, 1))))
         .build(raw_window_handle);
 
-    let mut not_current_gl_context = Some(unsafe {
+    let not_current_gl_context = Some(unsafe {
         gl_display
             .create_context(&gl_config, &context_attributes)
             .unwrap_or_else(|_| {
@@ -81,117 +187,20 @@ pub fn tete(event_loop: winit::event_loop::EventLoop<()>) -> Result<(), Box<dyn 
             })
     });
 
-    let mut state = None;
-    event_loop.run(move |event, window_target| {
-        match event {
-            Event::Resumed => {
-                #[cfg(android_platform)]
-                println!("Android window available");
-
-                let window = window.take().unwrap_or_else(|| {
-                    let window_builder = WindowBuilder::new()
-                        .with_transparent(true)
-                        .with_title("Glutin triangle gradient example (press Escape to exit)");
-                    glutin_winit::finalize_window(window_target, window_builder, &gl_config)
-                        .unwrap()
-                });
-
-                let attrs = window.build_surface_attributes(Default::default());
-                let gl_surface = unsafe {
-                    gl_config
-                        .display()
-                        .create_window_surface(&gl_config, &attrs)
-                        .unwrap()
-                };
-
-                // Make it current.
-                let gl_context = not_current_gl_context
-                    .take()
-                    .unwrap()
-                    .make_current(&gl_surface)
-                    .unwrap();
-
-                // The context needs to be current for the Renderer to set up shaders and
-                // buffers. It also performs function loading, which needs a current context on
-                // WGL.
-
-                // Try setting vsync.
-                if let Err(res) = gl_surface
-                    .set_swap_interval(&gl_context, SwapInterval::Wait(NonZeroU32::new(1).unwrap()))
-                {
-                    eprintln!("Error setting vsync: {res:?}");
-                }
-
-                assert!(state.replace((gl_context, gl_surface, window)).is_none());
-            }
-            Event::Suspended => {
-                // This event is only raised on Android, where the backing NativeWindow for a GL
-                // Surface can appear and disappear at any moment.
-                println!("Android window removed");
-
-                // Destroy the GL Surface and un-current the GL Context before ndk-glue releases
-                // the window back to the system.
-                let (gl_context, ..) = state.take().unwrap();
-                assert!(not_current_gl_context
-                    .replace(gl_context.make_not_current().unwrap())
-                    .is_none());
-            }
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::Resized(size) => {
-                    // if size.width != 0 && size.height != 0 {
-                    //     // Some platforms like EGL require resizing GL surface to update the size
-                    //     // Notable platforms here are Wayland and macOS, other don't require it
-                    //     // and the function is no-op, but it's wise to resize it for portability
-                    //     // reasons.
-                    //     if let Some((gl_context, gl_surface, _)) = &state {
-                    //         gl_surface.resize(
-                    //             gl_context,
-                    //             NonZeroU32::new(size.width).unwrap(),
-                    //             NonZeroU32::new(size.height).unwrap(),
-                    //         );
-                    //         let renderer = renderer.as_ref().unwrap();
-                    //         renderer.resize(size.width as i32, size.height as i32);
-                    //     }
-                    // }
-                }
-                WindowEvent::CloseRequested
-                | WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            logical_key: Key::Named(NamedKey::Escape),
-                            ..
-                        },
-                    ..
-                } => window_target.exit(),
-                _ => (),
+    Ok((
+        RetroVideo {
+            av_info,
+            gl_config,
+            not_current_gl_context,
+            window,
+            gl_display,
+            render: None,
+            state: None,
+            las_window_size: PhysicalSize {
+                width: 200,
+                height: 200,
             },
-            Event::AboutToWait => {
-                if let Some((gl_context, gl_surface, window)) = &state {
-                    // renderer.draw();
-                    // window.request_redraw();
-
-                    gl_surface.swap_buffers(gl_context).unwrap();
-                }
-            }
-            _ => (),
-        }
-    })?;
-
-    Ok(())
-}
-
-// Find the config with the maximum number of samples, so our triangle will be
-// smooth.
-pub fn gl_config_picker(configs: Box<dyn Iterator<Item = Config> + '_>) -> Config {
-    configs
-        .reduce(|accum, config| {
-            let transparency_check = config.stencil_size() & !accum.stencil_size();
-
-            if config.num_samples() > accum.num_samples() {
-                config
-            } else {
-                accum
-            }
-        })
-        .unwrap()
+        },
+        event_loop,
+    ))
 }

@@ -38,8 +38,8 @@ impl Render {
             geo,
             window_w as f32,
             window_h as f32,
-            origin_w as f32,
-            origin_h as f32,
+            origin_w,
+            origin_h,
         );
 
         self._vao.bind();
