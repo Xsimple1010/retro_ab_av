@@ -1,16 +1,14 @@
 use retro_ab::core::AvInfo;
-use sdl2::{EventPump, Sdl};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use winit::event_loop::EventLoopBuilder;
 
 use crate::audios::{self, RetroAudio};
-use crate::video::{self, RetroVideo};
+use crate::video::{self, tete};
 
 pub struct RetroAvCtx {
-    pub video: RetroVideo,
     pub audio: RetroAudio,
     av_info: Arc<AvInfo>,
-    _sdl: Sdl,
 }
 
 impl Drop for RetroAvCtx {
@@ -19,30 +17,19 @@ impl Drop for RetroAvCtx {
 
 impl RetroAvCtx {
     #[doc = "cria uma nova instancia de RetroAvCtx. todas as instancias so podem ser criadas dentro da thread principal!"]
-    pub fn new(av_info: Arc<AvInfo>) -> Result<(RetroAvCtx, EventPump), String> {
-        let _sdl = sdl2::init()?;
-
-        let event_pump = _sdl.event_pump()?;
-
-        let video = video::init(&_sdl, &av_info)?;
-        let audio = audios::init(av_info.clone())?;
-
-        Ok((
-            RetroAvCtx {
-                video,
-                audio,
-                _sdl,
-                av_info: av_info.clone(),
-            },
-            event_pump,
-        ))
+    pub fn new(av_info: Arc<AvInfo>) -> RetroAvCtx {
+        video::tete(EventLoopBuilder::new().build().unwrap());
+        Self {
+            audio: audios::init(&av_info).unwrap(),
+            av_info,
+        }
     }
 
     pub fn get_new_frame(&mut self) -> Result<(), String> {
         let start = Instant::now();
 
         self.audio.resume_new_frame();
-        self.video.draw_new_frame();
+        // self.video.draw_new_frame();
 
         //isso trava a taxa de quandros pelo o que foi fornecido pelo núcleo
         let end = Instant::now() - start;

@@ -1,6 +1,6 @@
 use std::{mem::size_of, ptr::null};
 
-use gl::types::*;
+use super::gl::gl::{self, types::*};
 
 pub struct VertexArray {
     id: GLuint,
