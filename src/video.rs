@@ -39,7 +39,7 @@ pub fn video_refresh_callback(data: *const c_void, width: c_uint, height: c_uint
 pub struct RetroVideo {
     pub state: Option<(PossiblyCurrentContext, Surface<WindowSurface>, Window)>,
     pub las_window_size: PhysicalSize<u32>,
-    window: Option<Window>,
+    pub window: Option<Window>,
     not_current_gl_context: Option<NotCurrentContext>,
     av_info: Arc<AvInfo>,
     render: Option<Render>,
