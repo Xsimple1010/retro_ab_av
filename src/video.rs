@@ -16,9 +16,9 @@ use std::ffi::c_uint;
 use std::os::raw::c_void;
 use std::ptr::null;
 use std::sync::Arc;
-use winit::dpi::PhysicalSize;
 use winit::event_loop::{EventLoop, EventLoopBuilder, EventLoopWindowTarget};
 use winit::window::{Window, WindowBuilder};
+use winit::{dpi::PhysicalSize, platform::windows::EventLoopBuilderExtWindows};
 
 static mut RAW_TEX_POINTER: RawTextureData = RawTextureData {
     data: null(),
@@ -108,7 +108,10 @@ impl RetroVideo {
 }
 
 pub fn init(av_info: Arc<AvInfo>) -> Result<(RetroVideo, EventLoop<()>), Box<dyn Error>> {
-    let event_loop = EventLoopBuilder::new().build().unwrap();
+    let event_loop = EventLoopBuilder::new()
+        .with_any_thread(true)
+        .build()
+        .unwrap();
     // Only Windows requires the window to be present before creating the display.
     // Other platforms don't really need one.
     //
