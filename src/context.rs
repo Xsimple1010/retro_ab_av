@@ -80,6 +80,17 @@ impl RetroAvCtx {
         }
     }
 
+    pub fn set_visibility(&self, visibility: bool) {
+        if let Some((_, _, window)) = &self.video.state {
+            window.set_visible(visibility);
+        }
+    }
+
+    pub fn close_window(&self, window_target: &EventLoopWindowTarget<()>) {
+        window_target.exit();
+        self.set_visibility(false);
+    }
+
     pub fn resume(&mut self, window_target: &EventLoopWindowTarget<()>) {
         self.video.resume(window_target)
     }

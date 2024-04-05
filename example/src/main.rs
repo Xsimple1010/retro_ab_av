@@ -73,8 +73,8 @@ fn game_loop(av_events: &mut RetroAvEvents) {
                         },
                     ..
                 } => {
+                    av_ctx.close_window(window_target);
                     running = false;
-                    window_target.exit();
                 }
                 WindowEvent::RedrawRequested => {
                     let _ = av_ctx.get_new_frame();
@@ -91,7 +91,8 @@ fn game_loop(av_events: &mut RetroAvEvents) {
 fn main() -> Result<(), ErroHandle> {
     let mut av_events = RetroAvEvents::new()?;
 
-    game_loop(&mut av_events);
-
+    for _ in 0..2 {
+        game_loop(&mut av_events);
+    }
     Ok(())
 }
