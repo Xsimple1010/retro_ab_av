@@ -12,8 +12,8 @@ use super::{
 };
 use glutin::display::{Display, GlDisplay};
 use retro_ab::core::{AvInfo, Geometry};
-use std::sync::Arc;
 use std::{ffi::CString, mem::size_of};
+use std::{rc::Rc, sync::Arc};
 
 pub struct Render {
     _program: ShaderProgram,
@@ -23,6 +23,7 @@ pub struct Render {
     _u_tex: GLint,
     _vao: VertexArray,
     _vbo: GlBuffer,
+    gl: Rc<gl::Gl>,
 }
 
 impl Render {
@@ -34,13 +35,7 @@ impl Render {
         window_w: i32,
         window_h: i32,
     ) {
-        let vertex = new_vertex(
-            geo,
-            window_w as f32,
-            window_h as f32,
-            origin_w,
-            origin_h,
-        );
+        let vertex = new_vertex(geo, window_w as f32, window_h as f32, origin_w, origin_h);
 
         self._vao.bind();
         self._vbo.bind();
@@ -75,25 +70,25 @@ impl Render {
         );
 
         unsafe {
-            gl::Viewport(0, 0, win_width, win_height);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            self.gl.Viewport(0, 0, win_width, win_height);
+            self.gl.Clear(gl::COLOR_BUFFER_BIT);
 
             self._texture.push(next_frame);
             self._program.use_program();
             self._texture.active();
 
             self._vao.bind();
-            gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+            self.gl.DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
             self._vao.un_bind();
             self._program.un_use_program();
         }
     }
 
     pub fn new(av_info: &Arc<AvInfo>, gl_display: &Display) -> Result<Render, String> {
-        gl::load_with(|symbol| {
+        let gl = Rc::new(gl::Gl::load_with(|symbol| {
             let symbol = CString::new(symbol).unwrap();
             gl_display.get_proc_address(symbol.as_c_str()).cast()
-        });
+        }));
 
         let vertex_shader_src = "
         #version 330 core
@@ -121,19 +116,19 @@ impl Render {
         }
         ";
 
-        let vertex_shader = Shader::new(gl::VERTEX_SHADER, vertex_shader_src);
-        let frag_shader = Shader::new(gl::FRAGMENT_SHADER, fragment_shader_src);
+        let vertex_shader = Shader::new(gl::VERTEX_SHADER, vertex_shader_src, gl.clone());
+        let frag_shader = Shader::new(gl::FRAGMENT_SHADER, fragment_shader_src, gl.clone());
 
-        let program = ShaderProgram::new(&[vertex_shader, frag_shader]);
+        let program = ShaderProgram::new(&[vertex_shader, frag_shader], gl.clone());
 
         let i_pos = program.get_attribute("i_pos");
         let i_tex_pos = program.get_attribute("i_tex_pos");
         let u_tex = program.get_uniform("u_tex");
 
-        let texture = Texture2D::new(av_info)?;
+        let texture = Texture2D::new(av_info, gl.clone())?;
 
-        let vao = VertexArray::new();
-        let vbo = GlBuffer::new(gl::ARRAY_BUFFER);
+        let vao = VertexArray::new(gl.clone());
+        let vbo = GlBuffer::new(gl::ARRAY_BUFFER, gl.clone());
 
         Ok(Render {
             _program: program,
@@ -143,6 +138,7 @@ impl Render {
             _u_tex: u_tex,
             _vao: vao,
             _vbo: vbo,
+            gl,
         })
     }
 }
