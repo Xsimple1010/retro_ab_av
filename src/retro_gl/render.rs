@@ -10,9 +10,8 @@ use super::{
     vertex::{new_vertex, GlVertex},
     vertex_array::VertexArray,
 };
-use glutin::display::{Display, GlDisplay};
 use retro_ab::core::{AvInfo, Geometry};
-use std::{ffi::CString, mem::size_of};
+use std::mem::size_of;
 use std::{rc::Rc, sync::Arc};
 
 pub struct Render {
@@ -84,12 +83,7 @@ impl Render {
         }
     }
 
-    pub fn new(av_info: &Arc<AvInfo>, gl_display: &Display) -> Result<Render, String> {
-        let gl = Rc::new(gl::Gl::load_with(|symbol| {
-            let symbol = CString::new(symbol).unwrap();
-            gl_display.get_proc_address(symbol.as_c_str()).cast()
-        }));
-
+    pub fn new(av_info: &Arc<AvInfo>, gl: Rc<gl::Gl>) -> Result<Render, String> {
         let vertex_shader_src = "
         #version 330 core
         in vec2 i_pos;

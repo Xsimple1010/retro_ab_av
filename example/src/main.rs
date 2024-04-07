@@ -1,21 +1,8 @@
 use retro_ab::{
     core::{self, RetroContext, RetroEnvCallbacks},
-    erro_handle::ErroHandle,
     retro_sys::retro_rumble_effect,
     test_tools,
 };
-use retro_ab_av::{
-    audio_sample_batch_callback, audio_sample_callback,
-    context::{RetroAvCtx, RetroAvEvents},
-    video_refresh_callback, Event, Key, KeyEvent, NamedKey, WindowEvent,
-};
-use std::sync::Arc;
-
-//essas callbacks nao sao relevantes para esse projeto!
-fn input_poll_callback() {}
-fn input_state_callback(_port: i16, _device: i16, _index: i16, _id: i16) -> i16 {
-    0
-}
 
 fn rumble_callback(
     _port: ::std::os::raw::c_uint,
@@ -46,53 +33,53 @@ fn create_core_ctx() -> Arc<RetroContext> {
     core_ctx
 }
 
-fn game_loop(av_events: &mut RetroAvEvents) {
+use retro_ab_av::{
+    audio_sample_batch_callback, audio_sample_callback, context::RetroAvCtx,
+    video_refresh_callback, Event, Keycode,
+};
+use std::sync::Arc;
+
+//essas callbacks nao sao relevantes para esse projeto!
+fn input_poll_callback() {}
+fn input_state_callback(_port: i16, _device: i16, _index: i16, _id: i16) -> i16 {
+    0
+}
+
+fn main() {
     let core_ctx = create_core_ctx();
-    let mut av_ctx = RetroAvCtx::new(core_ctx.core.av_info.clone(), av_events);
 
-    let mut running = true;
+    let (mut av_ctx, mut event_pump) =
+        RetroAvCtx::new(Arc::clone(&core_ctx.core.av_info)).expect("erro");
 
-    while running {
-        core::run(&core_ctx).unwrap();
-        av_ctx.request_redraw();
+    'running: loop {
+        core::run(&core_ctx).expect("msg");
+        av_ctx.get_new_frame().expect("");
 
-        av_events.pump(|event, window_target| match event {
-            Event::Resumed => {
-                av_ctx.resume(window_target);
-            }
-            Event::Suspended => {
-                av_ctx.suspended();
-            }
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested
-                | WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            logical_key: Key::Named(NamedKey::Escape),
-                            ..
-                        },
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
                     ..
+                } => {}
+                Event::Window {
+                    timestamp: _,
+                    window_id,
+                    win_event,
                 } => {
-                    av_ctx.close_window(window_target);
-                    running = false;
+                    if window_id == av_ctx.video.get_window_id() {
+                        match win_event {
+                            retro_ab_av::WindowEvent::Close => {
+                                println!("janela destroida");
+                            }
+                            _ => break 'running,
+                        }
+                    }
                 }
-                WindowEvent::RedrawRequested => {
-                    let _ = av_ctx.get_new_frame();
-                }
-                _ => (),
-            },
-            _ => (),
-        });
+                _ => {}
+            }
+        }
     }
 
     let _ = core::de_init(core_ctx);
-}
-
-fn main() -> Result<(), ErroHandle> {
-    let mut av_events = RetroAvEvents::new()?;
-
-    for _ in 0..2 {
-        game_loop(&mut av_events);
-    }
-    Ok(())
 }
