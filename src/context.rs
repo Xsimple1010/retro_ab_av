@@ -1,38 +1,53 @@
 use retro_ab::core::AvInfo;
+use retro_ab::erro_handle::ErroHandle;
+use retro_ab::retro_sys::retro_log_level;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use winit::dpi::PhysicalSize;
-use winit::event_loop::EventLoop;
+use winit::event::Event;
+use winit::event_loop::{EventLoop, EventLoopBuilder, EventLoopWindowTarget};
+use winit::platform::pump_events::EventLoopExtPumpEvents;
+use winit::platform::windows::EventLoopBuilderExtWindows;
 
 use crate::audios::{self, RetroAudio};
-use crate::video::{self, RetroVideo};
+use crate::video::RetroVideo;
+
+pub struct RetroAvEvents {
+    pub event_loop: EventLoop<()>,
+}
+
+impl RetroAvEvents {
+    pub fn new() -> Result<RetroAvEvents, ErroHandle> {
+        match EventLoopBuilder::new().with_any_thread(true).build() {
+            Ok(event_loop) => Ok(RetroAvEvents { event_loop }),
+            Err(e) => Err(ErroHandle {
+                level: retro_log_level::RETRO_LOG_ERROR,
+                message: e.to_string(),
+            }),
+        }
+    }
+
+    pub fn pump<T>(&mut self, event_handler: T)
+    where
+        T: FnMut(Event<()>, &EventLoopWindowTarget<()>),
+    {
+        self.event_loop
+            .pump_events(Some(Duration::ZERO), event_handler);
+    }
+}
 
 pub struct RetroAvCtx {
-    pub video: RetroVideo,
-    pub audio: RetroAudio,
+    video: RetroVideo,
+    audio: RetroAudio,
     av_info: Arc<AvInfo>,
 }
 
-impl Drop for RetroAvCtx {
-    fn drop(&mut self) {}
-}
-
 impl RetroAvCtx {
-    #[doc = "cria uma nova instancia de RetroAvCtx. todas as instancias so podem ser criadas dentro da thread principal!"]
-    pub fn new(av_info: Arc<AvInfo>) -> (RetroAvCtx, EventLoop<()>) {
-        let (ctx, event) = video::init(av_info.clone()).unwrap();
-        (
-            Self {
-                audio: audios::init(&av_info).unwrap(),
-                video: ctx,
-                av_info,
-            },
-            event,
-        )
-    }
-
-    pub fn set_new_size(&mut self, size: PhysicalSize<u32>) {
-        self.video.las_window_size = size;
+    pub fn new(av_info: Arc<AvInfo>, instance: &RetroAvEvents) -> RetroAvCtx {
+        Self {
+            audio: audios::init(&av_info).unwrap(),
+            video: RetroVideo::new(av_info.clone(), &instance.event_loop).unwrap(),
+            av_info,
+        }
     }
 
     pub fn get_new_frame(&mut self) -> Result<(), String> {
@@ -57,5 +72,30 @@ impl RetroAvCtx {
         ));
 
         Ok(())
+    }
+
+    pub fn request_redraw(&self) {
+        if let Some((_, _, window)) = &self.video.state {
+            window.request_redraw();
+        }
+    }
+
+    pub fn set_visibility(&self, visibility: bool) {
+        if let Some((_, _, window)) = &self.video.state {
+            window.set_visible(visibility);
+        }
+    }
+
+    pub fn close_window(&self, window_target: &EventLoopWindowTarget<()>) {
+        window_target.exit();
+        self.set_visibility(false);
+    }
+
+    pub fn resume(&mut self, window_target: &EventLoopWindowTarget<()>) {
+        self.video.resume(window_target)
+    }
+
+    pub fn suspended(&mut self) {
+        self.video.suspended();
     }
 }

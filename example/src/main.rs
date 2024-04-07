@@ -1,18 +1,15 @@
 use retro_ab::{
-    core::{self, RetroEnvCallbacks},
+    core::{self, RetroContext, RetroEnvCallbacks},
+    erro_handle::ErroHandle,
     retro_sys::retro_rumble_effect,
     test_tools,
 };
 use retro_ab_av::{
     audio_sample_batch_callback, audio_sample_callback,
-    context::RetroAvCtx,
-    glutin::surface::GlSurface,
-    video_refresh_callback,
-    winit::{
-        event::{Event, KeyEvent, WindowEvent},
-        keyboard::{Key, NamedKey},
-    },
+    context::{RetroAvCtx, RetroAvEvents},
+    video_refresh_callback, Event, Key, KeyEvent, NamedKey, WindowEvent,
 };
+use std::sync::Arc;
 
 //essas callbacks nao sao relevantes para esse projeto!
 fn input_poll_callback() {}
@@ -28,7 +25,7 @@ fn rumble_callback(
     true
 }
 
-fn main() {
+fn create_core_ctx() -> Arc<RetroContext> {
     let core_ctx = core::load(
         "C:/WFL/cores/test.dll",
         test_tools::paths::get_paths(),
@@ -46,21 +43,27 @@ fn main() {
     core::init(&core_ctx).expect("Erro ao tentar inicializar o contexto");
     core::load_game(&core_ctx, "C:/WFL/roms/teste.sfc").expect("Erro ao tentar carrega a rom");
 
-    let (mut ctx, event_loop) = RetroAvCtx::new(core_ctx.core.av_info.clone());
+    core_ctx
+}
 
-    event_loop
-        .run(|event, window_target| match event {
+fn game_loop(av_events: &mut RetroAvEvents) {
+    let core_ctx = create_core_ctx();
+    let mut av_ctx = RetroAvCtx::new(core_ctx.core.av_info.clone(), av_events);
+
+    let mut running = true;
+
+    while running {
+        core::run(&core_ctx).unwrap();
+        av_ctx.request_redraw();
+
+        av_events.pump(|event, window_target| match event {
             Event::Resumed => {
-                ctx.video.resume(&window_target);
+                av_ctx.resume(window_target);
             }
             Event::Suspended => {
-                ctx.video.suspended();
+                av_ctx.suspended();
             }
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::Resized(size) => ctx.set_new_size(size),
-                WindowEvent::RedrawRequested => {
-                    ctx.get_new_frame().unwrap();
-                }
                 WindowEvent::CloseRequested
                 | WindowEvent::KeyboardInput {
                     event:
@@ -70,21 +73,26 @@ fn main() {
                         },
                     ..
                 } => {
-                    window_target.exit();
+                    av_ctx.close_window(window_target);
+                    running = false;
+                }
+                WindowEvent::RedrawRequested => {
+                    let _ = av_ctx.get_new_frame();
                 }
                 _ => (),
             },
-            Event::AboutToWait => {
-                if let Some((gl_context, gl_surface, window)) = &ctx.video.state {
-                    core::run(&core_ctx).unwrap();
-                    window.request_redraw();
-
-                    gl_surface.swap_buffers(gl_context).unwrap();
-                }
-            }
             _ => (),
-        })
-        .unwrap();
+        });
+    }
 
-    core::de_init(core_ctx.clone()).unwrap();
+    let _ = core::de_init(core_ctx);
+}
+
+fn main() -> Result<(), ErroHandle> {
+    let mut av_events = RetroAvEvents::new()?;
+
+    for _ in 0..2 {
+        game_loop(&mut av_events);
+    }
+    Ok(())
 }
