@@ -12,6 +12,8 @@
     "rodio",
     "Shaderiv",
     "Storei",
+    "vulkan",
+    "vulkano",
     "XRGB"
   ],
   "files.associations": {

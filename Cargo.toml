@@ -9,12 +9,10 @@ edition = "2021"
 [dependencies]
 retro_ab = { git = "https://github.com/Xsimple1010/retro_ab_rs.git" }
 rodio = "0.17.3"
-sdl2 = "0.36.0"
+vulkano = "0.34.1"
 
-[build-dependencies]
-gl_generator = "0.14"
-cfg_aliases = "0.1.1"
-
+[profile.dev]
+opt-level = 1
 
 [[example]]
 name = "example"
