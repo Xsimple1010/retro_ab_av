@@ -4,6 +4,17 @@ use retro_ab::{
     test_tools,
 };
 
+use retro_ab_av::{
+    audio_sample_batch_callback, audio_sample_callback, context::RetroAvCtx,
+    video_refresh_callback, Event, Keycode,
+};
+use std::{env, sync::Arc};
+
+//essas callbacks nao sao relevantes para esse projeto!
+fn input_poll_callback() {}
+fn input_state_callback(_port: i16, _device: i16, _index: i16, _id: i16) -> i16 {
+    0
+}
 fn rumble_callback(
     _port: ::std::os::raw::c_uint,
     _effect: retro_rumble_effect,
@@ -12,41 +23,43 @@ fn rumble_callback(
     true
 }
 
-fn create_core_ctx() -> Arc<RetroContext> {
-    let core_ctx = core::load(
-        "C:/WFL/cores/test.dll",
-        test_tools::paths::get_paths(),
-        RetroEnvCallbacks {
-            audio_sample_batch_callback,
-            audio_sample_callback,
-            input_poll_callback,
-            input_state_callback,
-            video_refresh_callback,
-            rumble_callback,
-        },
-    )
-    .expect("Erro ao tentar criar RetroContext: ");
+fn create_core_ctx() -> Result<Arc<RetroContext>, &'static str> {
+    let values = retro_ab::args_manager::get_values(env::args().collect());
 
-    core::init(&core_ctx).expect("Erro ao tentar inicializar o contexto");
-    core::load_game(&core_ctx, "C:/WFL/roms/teste.sfc").expect("Erro ao tentar carrega a rom");
+    match values.get_key_value("core") {
+        Some((_, path)) => {
+            println!("{:?}", path);
 
-    core_ctx
+            let core_ctx = core::load(
+                path,
+                test_tools::paths::get_paths(),
+                RetroEnvCallbacks {
+                    audio_sample_batch_callback,
+                    audio_sample_callback,
+                    input_poll_callback,
+                    input_state_callback,
+                    video_refresh_callback,
+                    rumble_callback,
+                },
+            )
+            .expect("Erro ao tentar criar RetroContext: ");
+
+            if let Some((_, rom)) = values.get_key_value("rom") {
+                println!("{:?}", rom);
+                core::init(&core_ctx).expect("Erro ao tentar inicializar o contexto");
+                core::load_game(&core_ctx, rom).expect("Erro ao tentar carrega a rom");
+            }
+
+            return Ok(core_ctx);
+        }
+        _ => {}
+    }
+
+    Err("Erro ao tentar criar RetroContext: ")
 }
 
-use retro_ab_av::{
-    audio_sample_batch_callback, audio_sample_callback, context::RetroAvCtx,
-    video_refresh_callback, Event, Keycode,
-};
-use std::sync::Arc;
-
-//essas callbacks nao sao relevantes para esse projeto!
-fn input_poll_callback() {}
-fn input_state_callback(_port: i16, _device: i16, _index: i16, _id: i16) -> i16 {
-    0
-}
-
-fn main() {
-    let core_ctx = create_core_ctx();
+fn create_new_game_window() -> Result<(), &'static str> {
+    let core_ctx = create_core_ctx()?;
 
     let (mut av_ctx, mut event_pump) =
         RetroAvCtx::new(Arc::clone(&core_ctx.core.av_info)).expect("erro");
@@ -64,22 +77,26 @@ fn main() {
                 } => {}
                 Event::Window {
                     timestamp: _,
-                    window_id,
+                    window_id: _,
                     win_event,
-                } => {
-                    if window_id == av_ctx.video.get_window_id() {
-                        match win_event {
-                            retro_ab_av::WindowEvent::Close => {
-                                println!("janela destroida");
-                            }
-                            _ => break 'running,
-                        }
-                    }
-                }
+                } => match win_event {
+                    retro_ab_av::WindowEvent::Close => break 'running,
+                    _ => {}
+                },
                 _ => {}
             }
         }
     }
 
     let _ = core::de_init(core_ctx);
+
+    Ok(())
+}
+
+fn main() -> Result<(), &'static str> {
+    for _ in 0..10 {
+        create_new_game_window()?;
+    }
+
+    Ok(())
 }

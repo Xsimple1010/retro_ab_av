@@ -25,13 +25,25 @@ pub fn video_refresh_callback(data: *const c_void, width: c_uint, height: c_uint
 pub struct RetroVideo {
     _video: VideoSubsystem,
     _window: Window,
-    _gl_ctx: GLContext,
+    _gl_ctx: Option<GLContext>,
     _render: Render,
     _av_info: Arc<AvInfo>,
 }
 
 impl Drop for RetroVideo {
     fn drop(&mut self) {
+        //gl_ctx precisa ser deletado antes de tudo!
+        /* esse é comportamento ideal aqui
+        // Deletar o contexto OpenGL
+        SDL_GL_DeleteContext(glcontext);
+
+        // Destruir a janela
+        SDL_DestroyWindow(window);
+        */
+        {
+            self._gl_ctx.take();
+        }
+
         self._video.gl_unload_library();
     }
 }
@@ -100,7 +112,7 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
             Ok(RetroVideo {
                 _video,
                 _window,
-                _gl_ctx,
+                _gl_ctx: Some(_gl_ctx),
                 _render,
                 _av_info: av_info.clone(),
             })

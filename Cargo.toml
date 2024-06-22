@@ -8,8 +8,8 @@ edition = "2021"
 
 [dependencies]
 retro_ab = { git = "https://github.com/Xsimple1010/retro_ab_rs.git" }
-rodio = "0.17.3"
-sdl2 = "0.36.0"
+rodio = "0.18.1"
+sdl2 = "0.37.0"
 
 [build-dependencies]
 gl_generator = "0.14"
