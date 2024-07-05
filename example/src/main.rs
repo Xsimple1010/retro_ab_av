@@ -1,3 +1,5 @@
+use std::{env, sync::Arc};
+
 use retro_ab::{
     core::{self, RetroContext, RetroEnvCallbacks},
     retro_sys::retro_rumble_effect,
@@ -8,7 +10,6 @@ use retro_ab_av::{
     audio_sample_batch_callback, audio_sample_callback, context::RetroAvCtx,
     video_refresh_callback, Event, Keycode,
 };
-use std::{env, sync::Arc};
 
 //essas callbacks nao sao relevantes para esse projeto!
 fn input_poll_callback() {}
@@ -16,7 +17,7 @@ fn input_state_callback(_port: i16, _device: i16, _index: i16, _id: i16) -> i16 
     0
 }
 fn rumble_callback(
-    _port: ::std::os::raw::c_uint,
+    _port: std::os::raw::c_uint,
     _effect: retro_rumble_effect,
     _strength: u16,
 ) -> bool {
@@ -42,7 +43,7 @@ fn create_core_ctx() -> Result<Arc<RetroContext>, &'static str> {
                     rumble_callback,
                 },
             )
-            .expect("Erro ao tentar criar RetroContext: ");
+                .expect("Erro ao tentar criar RetroContext: ");
 
             if let Some((_, rom)) = values.get_key_value("rom") {
                 println!("{:?}", rom);
@@ -65,8 +66,11 @@ fn create_new_game_window() -> Result<(), &'static str> {
         RetroAvCtx::new(Arc::clone(&core_ctx.core.av_info)).expect("erro");
 
     'running: loop {
-        core::run(&core_ctx).expect("msg");
-        av_ctx.get_new_frame().expect("");
+
+        if av_ctx.sync() {
+            core::run(&core_ctx).expect("msg");
+            av_ctx.get_new_frame();
+        }
 
         for event in event_pump.poll_iter() {
             match event {
@@ -94,7 +98,7 @@ fn create_new_game_window() -> Result<(), &'static str> {
 }
 
 fn main() -> Result<(), &'static str> {
-    for _ in 0..10 {
+    for _ in 0..2 {
         create_new_game_window()?;
     }
 

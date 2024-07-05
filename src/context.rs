@@ -1,20 +1,17 @@
+use std::sync::Arc;
+
 use retro_ab::core::AvInfo;
 use sdl2::{EventPump, Sdl};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-
 use crate::audios::{self, RetroAudio};
+use crate::sync::RetroSync;
 use crate::video::{self, RetroVideo};
 
 pub struct RetroAvCtx {
     pub video: RetroVideo,
     pub audio: RetroAudio,
+    sync: RetroSync,
     av_info: Arc<AvInfo>,
     _sdl: Sdl,
-}
-
-impl Drop for RetroAvCtx {
-    fn drop(&mut self) {}
 }
 
 impl RetroAvCtx {
@@ -32,33 +29,20 @@ impl RetroAvCtx {
                 video,
                 audio,
                 _sdl,
+                sync: RetroSync::default(),
                 av_info: av_info.clone(),
             },
             event_pump,
         ))
     }
 
-    pub fn get_new_frame(&mut self) -> Result<(), String> {
-        let start = Instant::now();
-
+    pub fn get_new_frame(&mut self) {
         self.audio.resume_new_frame();
         self.video.draw_new_frame();
+    }
 
-        //isso trava a taxa de quandros pelo o que foi fornecido pelo núcleo
-        let end = Instant::now() - start;
-        let fps_delay = (910.0 / *self.av_info.timing.fps.lock().unwrap() as f32
-            - end.as_millis() as f32)
-            * 1_000_000.0 as f32;
-
-        if end.as_nanos() as f32 > fps_delay {
-            std::thread::sleep(Duration::from_millis(16));
-            return Ok(());
-        }
-
-        std::thread::sleep(Duration::from_nanos(
-            fps_delay as u64 - end.as_nanos() as u64,
-        ));
-
-        Ok(())
+    pub fn sync(&mut self ) -> bool {
+        let fps = self.av_info.timing.fps.lock().unwrap().abs();
+        self.sync.sync(fps)
     }
 }

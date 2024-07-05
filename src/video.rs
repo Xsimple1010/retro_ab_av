@@ -97,7 +97,7 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
             let gl = Rc::new(gl::Gl::load_with(|name| {
                 _video.gl_get_proc_address(name) as *const _
             }));
-            _video.gl_set_swap_interval(1)?;
+            // _video.gl_set_swap_interval(1)?;
 
             _window
                 .set_minimum_size(
@@ -107,7 +107,7 @@ pub fn init(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<RetroVideo, String> {
                 .expect("nao e possível definir um tamanho mínimo a janela");
 
             let mut _render =
-                Render::new(av_info, gl.clone()).expect("erro ao tentar inciar o opengl");
+                Render::new(av_info, gl.clone()).expect("erro ao tentar iniciar o opengl");
 
             Ok(RetroVideo {
                 _video,
