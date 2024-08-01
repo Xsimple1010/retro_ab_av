@@ -1,14 +1,14 @@
 use std::{env, sync::Arc};
-
 use retro_ab::{
-    core::{self, RetroContext, RetroEnvCallbacks},
+    core::RetroEnvCallbacks,
     retro_sys::retro_rumble_effect,
     test_tools,
 };
-
+use retro_ab::retro_context::RetroContext;
 use retro_ab_av::{
-    audio_sample_batch_callback, audio_sample_callback, context::RetroAvCtx,
-    video_refresh_callback, Event, Keycode,
+    context::RetroAvCtx
+    , Event, Keycode,
+    audio_sample_batch_callback, audio_sample_callback, video_refresh_callback,
 };
 
 //essas callbacks nao sao relevantes para esse projeto!
@@ -29,11 +29,9 @@ fn create_core_ctx() -> Result<Arc<RetroContext>, &'static str> {
 
     match values.get_key_value("core") {
         Some((_, path)) => {
-            println!("{:?}", path);
-
-            let core_ctx = core::load(
+            let core_ctx = RetroContext::new(
                 path,
-                test_tools::paths::get_paths(),
+                test_tools::paths::get_paths().unwrap(),
                 RetroEnvCallbacks {
                     audio_sample_batch_callback,
                     audio_sample_callback,
@@ -47,8 +45,7 @@ fn create_core_ctx() -> Result<Arc<RetroContext>, &'static str> {
 
             if let Some((_, rom)) = values.get_key_value("rom") {
                 println!("{:?}", rom);
-                core::init(&core_ctx).expect("Erro ao tentar inicializar o contexto");
-                core::load_game(&core_ctx, rom).expect("Erro ao tentar carrega a rom");
+                core_ctx.core.load_game(rom).expect("Erro ao tentar carrega a rom");
             }
 
             return Ok(core_ctx);
@@ -66,9 +63,8 @@ fn create_new_game_window() -> Result<(), &'static str> {
         RetroAvCtx::new(Arc::clone(&core_ctx.core.av_info)).expect("erro");
 
     'running: loop {
-
         if av_ctx.sync() {
-            core::run(&core_ctx).expect("msg");
+            core_ctx.core.run().expect("msg");
             av_ctx.get_new_frame();
         }
 
@@ -92,13 +88,13 @@ fn create_new_game_window() -> Result<(), &'static str> {
         }
     }
 
-    let _ = core::de_init(core_ctx);
+    let _ = core_ctx.delete();
 
     Ok(())
 }
 
 fn main() -> Result<(), &'static str> {
-    for _ in 0..2 {
+    for _ in 0..1 {
         create_new_game_window()?;
     }
 
