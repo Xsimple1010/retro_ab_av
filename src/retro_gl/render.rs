@@ -1,12 +1,17 @@
+use crate::video::RawTextureData;
+
 use super::{
+    framebuffer::FrameBuffer,
     gl::gl::{
         self,
         types::{GLint, GLuint},
+        DEPTH24_STENCIL8, DEPTH_ATTACHMENT, DEPTH_COMPONENT24, DEPTH_STENCIL_ATTACHMENT,
     },
     gl_buffer::GlBuffer,
+    renderbuffer::RenderBuffer,
     shader::Shader,
     shader_program::ShaderProgram,
-    texture::{RawTextureData, Texture2D},
+    texture::Texture2D,
     vertex::{new_vertex, GlVertex},
     vertex_array::VertexArray,
 };
@@ -22,6 +27,8 @@ pub struct Render {
     _u_tex: GLint,
     _vao: VertexArray,
     _vbo: GlBuffer,
+    _fbo: FrameBuffer,
+    _rbo: Option<RenderBuffer>,
     gl: Rc<gl::Gl>,
 }
 
@@ -123,6 +130,58 @@ impl Render {
 
         let vao = VertexArray::new(gl.clone());
         let vbo = GlBuffer::new(gl::ARRAY_BUFFER, gl.clone());
+        let fbo = FrameBuffer::new(gl.clone());
+        let mut rbo: Option<RenderBuffer> = None;
+
+        //configura o framebuffer e o renderbuffer
+        fbo.bind();
+        fbo.attach_texture(&texture);
+
+        let g_api = &av_info.video.graphic_api;
+        let geo = &av_info.video.geometry;
+
+        if *g_api.depth.lock().unwrap() && *g_api.stencil.lock().unwrap() {
+            let new_rbo = RenderBuffer::new(gl.clone());
+
+            new_rbo.bind();
+            new_rbo.storage(
+                DEPTH24_STENCIL8,
+                *geo.max_width.lock().unwrap() as i32,
+                *geo.max_height.lock().unwrap() as i32,
+            );
+
+            fbo.attach_render_buffer(DEPTH_STENCIL_ATTACHMENT, new_rbo.get_id());
+
+            rbo.replace(new_rbo);
+        } else if *g_api.depth.lock().unwrap() {
+            let new_rbo = RenderBuffer::new(gl.clone());
+
+            new_rbo.bind();
+            new_rbo.storage(
+                DEPTH_COMPONENT24,
+                *geo.max_width.lock().unwrap() as i32,
+                *geo.max_height.lock().unwrap() as i32,
+            );
+
+            fbo.attach_render_buffer(DEPTH_ATTACHMENT, new_rbo.get_id());
+
+            rbo.replace(new_rbo);
+        }
+
+        if let Some(rbo) = &rbo {
+            rbo.un_bind();
+            rbo.un_bind();
+        }
+
+        fbo.un_bind();
+
+        av_info
+            .video
+            .graphic_api
+            .fbo
+            .lock()
+            .unwrap()
+            .replace(fbo.get_id() as usize);
 
         Ok(Render {
             _program: program,
@@ -132,6 +191,8 @@ impl Render {
             _u_tex: u_tex,
             _vao: vao,
             _vbo: vbo,
+            _fbo: fbo,
+            _rbo: rbo,
             gl,
         })
     }

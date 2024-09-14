@@ -1,21 +1,10 @@
 use super::{gl::gl, pixel::Pixel};
+use crate::video::RawTextureData;
 use gl::types::GLuint;
 use retro_ab::core::AvInfo;
-use std::{
-    os::raw::{c_uint, c_void},
-    ptr::null,
-    rc::Rc,
-    sync::Arc,
-};
+use std::{ptr::null, rc::Rc, sync::Arc};
 
 pub type TexturePosition = [f32; 2];
-
-pub struct RawTextureData {
-    pub data: *const c_void,
-    pub width: c_uint,
-    pub height: c_uint,
-    pub pitch: usize,
-}
 
 pub struct Texture2D {
     id: GLuint,
@@ -56,6 +45,10 @@ impl Texture2D {
             );
             self.gl.BindTexture(gl::TEXTURE0, 0);
         }
+    }
+
+    pub fn get_id(&self) -> GLuint {
+        return self.id.clone();
     }
 
     pub fn new(av_info: &Arc<AvInfo>, gl: Rc<gl::Gl>) -> Result<Texture2D, String> {

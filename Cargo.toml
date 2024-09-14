@@ -1,4 +1,3 @@
-workspace = { members = ["example"] }
 [package]
 name = "retro_ab_av"
 version = "0.1.1"
@@ -14,8 +13,3 @@ sdl2 = "0.37.0"
 [build-dependencies]
 gl_generator = "0.14"
 cfg_aliases = "0.1.1"
-
-
-[[example]]
-name = "example"
-path = "example/src/main.rs"

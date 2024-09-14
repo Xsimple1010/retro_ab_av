@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use retro_ab::core::AvInfo;
-use sdl2::{EventPump, Sdl};
 use crate::audios::{self, RetroAudio};
 use crate::sync::RetroSync;
-use crate::video::{self, RetroVideo};
+use crate::video::RetroVideo;
+use retro_ab::core::AvInfo;
+use sdl2::{EventPump, Sdl};
 
 pub struct RetroAvCtx {
     pub video: RetroVideo,
@@ -21,7 +21,7 @@ impl RetroAvCtx {
 
         let event_pump = _sdl.event_pump()?;
 
-        let video = video::init(&_sdl, &av_info)?;
+        let video = RetroVideo::new(&_sdl, &av_info)?;
         let audio = audios::init(&av_info)?;
 
         Ok((
@@ -41,7 +41,7 @@ impl RetroAvCtx {
         self.video.draw_new_frame();
     }
 
-    pub fn sync(&mut self ) -> bool {
+    pub fn sync(&mut self) -> bool {
         let fps = self.av_info.timing.fps.lock().unwrap().abs();
         self.sync.sync(fps)
     }
