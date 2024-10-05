@@ -11,16 +11,16 @@
             "cargo": {
                 "args": [
                     "build",
-                    "--example=example",
+                    "--example=run_a_rom",
                 ],
                 "filter": {
-                    "name": "example",
+                    "name": "run_a_rom",
                     "kind": "example"
                 }
             },
             "args": [
-                "--core=./cores/snes9x_libretro.dll",
-                "--rom=./roms/Mega Man X (E).smc"
+               "--core=C:/RetroArch-Win64/cores/ppsspp_libretro.dll",
+                "--rom=C:/Users/aderv/Downloads/Crisis Core - Final Fantasy VII (USA).iso"
             ],
             "cwd": "${workspaceFolder}"
         },

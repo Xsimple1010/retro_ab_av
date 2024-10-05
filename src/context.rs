@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::audios::{self, RetroAudio};
+use crate::audios::RetroAudio;
 use crate::sync::RetroSync;
 use crate::video::RetroVideo;
 use retro_ab::core::AvInfo;
@@ -15,14 +15,14 @@ pub struct RetroAvCtx {
 }
 
 impl RetroAvCtx {
-    #[doc = "cria uma nova instancia de RetroAvCtx. todas as instancias so podem ser criadas dentro da thread principal!"]
+    #[doc = "cria uma nova instancia de RetroAvCtx. sempre mantenha a instancia dentro da thread onde foi criada!"]
     pub fn new(av_info: Arc<AvInfo>) -> Result<(RetroAvCtx, EventPump), String> {
         let _sdl = sdl2::init()?;
 
         let event_pump = _sdl.event_pump()?;
 
         let video = RetroVideo::new(&_sdl, &av_info)?;
-        let audio = audios::init(&av_info)?;
+        let audio = RetroAudio::init(&av_info)?;
 
         Ok((
             RetroAvCtx {

@@ -1,5 +1,6 @@
 use retro_ab::{
-    core::RetroEnvCallbacks, retro_ab::RetroAB, retro_sys::retro_rumble_effect, test_tools,
+    args_manager::RetroArgs, core::RetroEnvCallbacks, retro_ab::RetroAB,
+    retro_sys::retro_rumble_effect, test_tools,
 };
 use retro_ab_av::{
     audio_sample_batch_callback, audio_sample_callback, context::RetroAvCtx, get_proc_address,
@@ -24,48 +25,36 @@ fn te() {
     println!("teste");
 }
 
-fn create_core_ctx() -> Result<RetroAB, &'static str> {
-    let values = retro_ab::args_manager::get_values(env::args().collect());
+fn create_core_ctx() -> RetroAB {
+    let args = RetroArgs::new().unwrap();
 
-    match values.get_key_value("core") {
-        Some((_, path)) => {
-            let core_ctx = RetroAB::new(
-                path,
-                test_tools::paths::get_paths().unwrap(),
-                RetroEnvCallbacks {
-                    audio_sample_batch_callback,
-                    audio_sample_callback,
-                    input_poll_callback,
-                    input_state_callback,
-                    video_refresh_callback,
-                    rumble_callback,
-                    context_destroy: te,
-                    context_reset: te,
-                    get_proc_address,
-                },
-                retro_ab::retro_sys::retro_hw_context_type::RETRO_HW_CONTEXT_OPENGL_CORE,
-            )
-            .expect("Erro ao tentar criar RetroContext: ");
+    let core_ctx = RetroAB::new(
+        &args.core,
+        test_tools::paths::get_paths().unwrap(),
+        RetroEnvCallbacks {
+            audio_sample_batch_callback,
+            audio_sample_callback,
+            input_poll_callback,
+            input_state_callback,
+            video_refresh_callback,
+            rumble_callback,
+            context_destroy: te,
+            context_reset: te,
+            get_proc_address,
+        },
+        retro_ab::retro_sys::retro_hw_context_type::RETRO_HW_CONTEXT_OPENGL_CORE,
+    )
+    .unwrap();
 
-            let _ = core_ctx.core().init();
+    let _ = core_ctx.core().init();
 
-            if let Some((_, rom)) = values.get_key_value("rom") {
-                core_ctx
-                    .core()
-                    .load_game(rom)
-                    .expect("Erro ao tentar carrega a rom");
-            }
+    core_ctx.core().load_game(&args.core).unwrap();
 
-            return Ok(core_ctx);
-        }
-        _ => {}
-    }
-
-    Err("Erro ao tentar criar RetroContext: ")
+    core_ctx
 }
 
 fn create_new_game_window() -> Result<(), &'static str> {
-    let core_ctx = create_core_ctx()?;
+    let core_ctx = create_core_ctx();
 
     let (mut av_ctx, mut event_pump) =
         RetroAvCtx::new(Arc::clone(&core_ctx.core().av_info)).unwrap();

@@ -28,17 +28,19 @@ static mut RAW_TEX_POINTER: RawTextureData = RawTextureData {
 
 pub fn video_refresh_callback(data: *const c_void, width: c_uint, height: c_uint, pitch: usize) {
     unsafe {
-        RAW_TEX_POINTER.data = data;
-        RAW_TEX_POINTER.height = height;
-        RAW_TEX_POINTER.width = width;
-        RAW_TEX_POINTER.pitch = pitch;
+        RAW_TEX_POINTER = RawTextureData {
+            data,
+            height,
+            width,
+            pitch,
+        }
     }
 }
 
-pub fn get_proc_address(procname: &str) -> *const () {
+pub fn get_proc_address(proc_name: &str) -> *const () {
     unsafe {
         if let Some(window) = &*addr_of!(WINDOW_CTX) {
-            window.get_proc_address(procname)
+            window.get_proc_address(proc_name)
         } else {
             null()
         }
@@ -50,9 +52,14 @@ pub trait RetroVideoAPi {
 
     fn draw_new_frame(&mut self, texture: &RawTextureData);
 
+    #[doc = "define um novo tamanho para a janela. 
+        ```
+        resize((width, height))
+        ```
+    "]
     fn resize(&mut self, new_size: (u32, u32));
 
-    fn get_proc_address(&self, procname: &str) -> *const ();
+    fn get_proc_address(&self, proc_name: &str) -> *const ();
 }
 
 pub struct RetroVideo;
