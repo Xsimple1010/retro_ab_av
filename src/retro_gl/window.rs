@@ -1,6 +1,6 @@
 use std::{rc::Rc, sync::Arc};
 
-use retro_ab::core::AvInfo;
+use retro_ab::{core::AvInfo, erro_handle::ErroHandle, retro_sys::retro_log_level};
 use sdl2::{
     video::{GLContext, GLProfile, Window},
     Sdl, VideoSubsystem,
@@ -23,7 +23,7 @@ impl Drop for GlWIndow {
         //gl_ctx precisa ser deletado antes de tudo!
         /* esse é comportamento ideal aqui
         // Deletar o contexto OpenGL
-        SDL_GL_DeleteContext(glcontext);
+        SDL_GL_DeleteContext(gl_context);
 
         // Destruir a janela
         SDL_DestroyWindow(window);
@@ -64,8 +64,16 @@ impl RetroVideoAPi for GlWIndow {
 }
 
 impl GlWIndow {
-    pub fn new(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<GlWIndow, String> {
-        let video = sdl.video()?;
+    pub fn new(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<GlWIndow, ErroHandle> {
+        let video = match sdl.video() {
+            Ok(sdl) => sdl,
+            Err(message) => {
+                return Err(ErroHandle {
+                    level: retro_log_level::RETRO_LOG_ERROR,
+                    message,
+                })
+            }
+        };
 
         let gl_attr = video.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
@@ -91,17 +99,22 @@ impl GlWIndow {
                 let gl = Rc::new(gl::Gl::load_with(|name| {
                     video.gl_get_proc_address(name) as *const _
                 }));
-                video.gl_set_swap_interval(1)?;
 
-                window
-                    .set_minimum_size(
-                        *av_info.video.geometry.base_width.lock().unwrap(),
-                        *av_info.video.geometry.base_height.lock().unwrap(),
-                    )
-                    .expect("nao e possível definir um tamanho mínimo a janela");
+                let _ = video.gl_set_swap_interval(1);
 
-                let render =
-                    Render::new(av_info, gl.clone()).expect("erro ao tentar inciar o opengl");
+                let result = window.set_minimum_size(
+                    *av_info.video.geometry.base_width.lock().unwrap(),
+                    *av_info.video.geometry.base_height.lock().unwrap(),
+                );
+
+                if let Err(e) = result {
+                    return Err(ErroHandle {
+                        level: retro_log_level::RETRO_LOG_ERROR,
+                        message: e.to_string(),
+                    });
+                }
+
+                let render = Render::new(av_info, gl.clone())?;
 
                 Ok(GlWIndow {
                     video,
@@ -111,7 +124,10 @@ impl GlWIndow {
                     av_info: av_info.clone(),
                 })
             }
-            Err(e) => Err(e.to_string()),
+            Err(e) => Err(ErroHandle {
+                level: retro_log_level::RETRO_LOG_ERROR,
+                message: e.to_string(),
+            }),
         }
     }
 }

@@ -1,21 +1,24 @@
 use crate::video::RawTextureData;
 
 use super::{
-    framebuffer::FrameBuffer,
+    frame_buffer::FrameBuffer,
     gl::gl::{
         self,
         types::{GLint, GLuint},
         DEPTH24_STENCIL8, DEPTH_ATTACHMENT, DEPTH_COMPONENT24, DEPTH_STENCIL_ATTACHMENT,
     },
     gl_buffer::GlBuffer,
-    renderbuffer::RenderBuffer,
+    render_buffer::RenderBuffer,
     shader::Shader,
     shader_program::ShaderProgram,
     texture::Texture2D,
     vertex::{new_vertex, GlVertex},
     vertex_array::VertexArray,
 };
-use retro_ab::core::{AvInfo, Geometry};
+use retro_ab::{
+    core::{AvInfo, Geometry},
+    erro_handle::ErroHandle,
+};
 use std::mem::size_of;
 use std::{rc::Rc, sync::Arc};
 
@@ -90,7 +93,7 @@ impl Render {
         }
     }
 
-    pub fn new(av_info: &Arc<AvInfo>, gl: Rc<gl::Gl>) -> Result<Render, String> {
+    pub fn new(av_info: &Arc<AvInfo>, gl: Rc<gl::Gl>) -> Result<Render, ErroHandle> {
         let vertex_shader_src = "
         #version 330 core
         in vec2 i_pos;
@@ -117,10 +120,10 @@ impl Render {
         }
         ";
 
-        let vertex_shader = Shader::new(gl::VERTEX_SHADER, vertex_shader_src, gl.clone());
-        let frag_shader = Shader::new(gl::FRAGMENT_SHADER, fragment_shader_src, gl.clone());
+        let vertex_shader = Shader::new(gl::VERTEX_SHADER, vertex_shader_src, gl.clone())?;
+        let frag_shader = Shader::new(gl::FRAGMENT_SHADER, fragment_shader_src, gl.clone())?;
 
-        let program = ShaderProgram::new(&[vertex_shader, frag_shader], gl.clone());
+        let program = ShaderProgram::new(&[vertex_shader, frag_shader], gl.clone())?;
 
         let i_pos = program.get_attribute("i_pos");
         let i_tex_pos = program.get_attribute("i_tex_pos");
@@ -133,7 +136,7 @@ impl Render {
         let fbo = FrameBuffer::new(gl.clone());
         let mut rbo: Option<RenderBuffer> = None;
 
-        //configura o framebuffer e o renderbuffer
+        //configura o frame_buffer e o render_buffer
         fbo.bind();
         fbo.attach_texture(&texture);
 

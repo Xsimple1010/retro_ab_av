@@ -1,7 +1,7 @@
 use super::{gl::gl, pixel::Pixel};
 use crate::video::RawTextureData;
 use gl::types::GLuint;
-use retro_ab::core::AvInfo;
+use retro_ab::{core::AvInfo, erro_handle::ErroHandle};
 use std::{ptr::null, rc::Rc, sync::Arc};
 
 pub type TexturePosition = [f32; 2];
@@ -51,7 +51,7 @@ impl Texture2D {
         return self.id.clone();
     }
 
-    pub fn new(av_info: &Arc<AvInfo>, gl: Rc<gl::Gl>) -> Result<Texture2D, String> {
+    pub fn new(av_info: &Arc<AvInfo>, gl: Rc<gl::Gl>) -> Result<Texture2D, ErroHandle> {
         let mut id = 0;
         let geo = &av_info.video.geometry;
         let pixel = Pixel::new(&av_info.video.pixel_format.lock().unwrap())?;

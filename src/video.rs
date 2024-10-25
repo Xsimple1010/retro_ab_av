@@ -1,7 +1,11 @@
 use crate::retro_gl::window::GlWIndow;
 use retro_ab::{
     core::AvInfo,
-    retro_sys::retro_hw_context_type::{RETRO_HW_CONTEXT_NONE, RETRO_HW_CONTEXT_OPENGL_CORE},
+    erro_handle::ErroHandle,
+    retro_sys::{
+        retro_hw_context_type::{RETRO_HW_CONTEXT_NONE, RETRO_HW_CONTEXT_OPENGL_CORE},
+        retro_log_level,
+    },
 };
 use sdl2::Sdl;
 use std::{
@@ -73,7 +77,7 @@ impl Drop for RetroVideo {
 }
 
 impl RetroVideo {
-    pub fn new(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<Self, String> {
+    pub fn new(sdl: &Sdl, av_info: &Arc<AvInfo>) -> Result<Self, ErroHandle> {
         match &av_info.video.graphic_api.context_type {
             RETRO_HW_CONTEXT_OPENGL_CORE | RETRO_HW_CONTEXT_NONE => {
                 unsafe { WINDOW_CTX = Some(Box::new(GlWIndow::new(sdl, av_info)?)) }
@@ -81,7 +85,10 @@ impl RetroVideo {
                 return Ok(Self);
             }
             // RETRO_HW_CONTEXT_VULKAN => {}
-            _ => Err("suporte para a api selecionada não está disponível".to_owned()),
+            _ => Err(ErroHandle {
+                level: retro_log_level::RETRO_LOG_ERROR,
+                message: "suporte para a api selecionada não está disponível".to_owned(),
+            }),
         }
     }
 

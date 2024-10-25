@@ -1,4 +1,4 @@
-use retro_ab::core::AvInfo;
+use retro_ab::{core::AvInfo, erro_handle::ErroHandle, retro_sys::retro_log_level};
 use rodio::{buffer::SamplesBuffer, OutputStream, OutputStreamHandle, Sink};
 use std::{
     ptr::{null, slice_from_raw_parts},
@@ -49,10 +49,26 @@ pub struct RetroAudio {
 }
 
 impl RetroAudio {
-    pub fn init(av_info: &Arc<AvInfo>) -> Result<Self, String> {
-        let (stream, stream_handle) = OutputStream::try_default().expect("msg");
+    pub fn init(av_info: &Arc<AvInfo>) -> Result<Self, ErroHandle> {
+        let (stream, stream_handle) = match OutputStream::try_default() {
+            Ok(out) => out,
+            Err(e) => {
+                return Err(ErroHandle {
+                    level: retro_log_level::RETRO_LOG_ERROR,
+                    message: e.to_string(),
+                })
+            }
+        };
 
-        let sink: Sink = Sink::try_new(&stream_handle).expect("msg");
+        let sink: Sink = match Sink::try_new(&stream_handle) {
+            Ok(sink) => sink,
+            Err(e) => {
+                return Err(ErroHandle {
+                    level: retro_log_level::RETRO_LOG_ERROR,
+                    message: e.to_string(),
+                })
+            }
+        };
 
         Ok(Self {
             _stream: stream,

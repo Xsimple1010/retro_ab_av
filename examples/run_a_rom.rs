@@ -1,12 +1,16 @@
 use retro_ab::{
-    args_manager::RetroArgs, core::RetroEnvCallbacks, retro_ab::RetroAB,
-    retro_sys::retro_rumble_effect, test_tools,
+    args_manager::RetroArgs,
+    core::RetroEnvCallbacks,
+    erro_handle::ErroHandle,
+    retro_ab::RetroAB,
+    retro_sys::{retro_hw_context_type, retro_rumble_effect},
+    test_tools,
 };
 use retro_ab_av::{
-    audio_sample_batch_callback, audio_sample_callback, context::RetroAvCtx, get_proc_address,
+    audio_sample_batch_callback, audio_sample_callback, get_proc_address, retro_av::RetroAvCtx,
     video_refresh_callback, Event, Keycode,
 };
-use std::{env, sync::Arc};
+use std::sync::Arc;
 
 //essas callbacks nao sao relevantes para esse projeto!
 fn input_poll_callback() {}
@@ -25,12 +29,12 @@ fn te() {
     println!("teste");
 }
 
-fn create_core_ctx() -> RetroAB {
-    let args = RetroArgs::new().unwrap();
+fn create_core_ctx() -> Result<RetroAB, ErroHandle> {
+    let args = RetroArgs::new()?;
 
     let core_ctx = RetroAB::new(
         &args.core,
-        test_tools::paths::get_paths().unwrap(),
+        test_tools::paths::get_paths()?,
         RetroEnvCallbacks {
             audio_sample_batch_callback,
             audio_sample_callback,
@@ -42,26 +46,25 @@ fn create_core_ctx() -> RetroAB {
             context_reset: te,
             get_proc_address,
         },
-        retro_ab::retro_sys::retro_hw_context_type::RETRO_HW_CONTEXT_OPENGL_CORE,
-    )
-    .unwrap();
+        retro_hw_context_type::RETRO_HW_CONTEXT_OPENGL_CORE,
+    )?;
 
-    let _ = core_ctx.core().init();
+    core_ctx.core().init()?;
 
-    core_ctx.core().load_game(&args.core).unwrap();
+    core_ctx.core().load_game(&args.core)?;
 
-    core_ctx
+    Ok(core_ctx)
 }
 
-fn create_new_game_window() -> Result<(), &'static str> {
-    let core_ctx = create_core_ctx();
+fn create_new_game_window() -> Result<(), ErroHandle> {
+    let retro_ab = create_core_ctx()?;
 
     let (mut av_ctx, mut event_pump) =
-        RetroAvCtx::new(Arc::clone(&core_ctx.core().av_info)).unwrap();
+        RetroAvCtx::new(Arc::clone(&retro_ab.core().av_info)).unwrap();
 
     'running: loop {
         if av_ctx.sync() {
-            core_ctx.core().run().expect("msg");
+            retro_ab.core().run().unwrap();
             av_ctx.get_new_frame();
         }
 
@@ -88,7 +91,7 @@ fn create_new_game_window() -> Result<(), &'static str> {
     Ok(())
 }
 
-fn main() -> Result<(), &'static str> {
+fn main() -> Result<(), ErroHandle> {
     for _ in 0..1 {
         create_new_game_window()?;
     }
