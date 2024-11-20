@@ -3,6 +3,7 @@ extern crate rodio;
 extern crate sdl2;
 
 mod audios;
+mod print_scree;
 mod retro_gl;
 mod sync;
 mod video;

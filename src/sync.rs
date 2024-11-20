@@ -19,7 +19,6 @@ impl RetroSync {
             return true;
         }
 
-
         if let Some(last_time) = self.last_time {
             let time_lapse = now - last_time;
             let core_default_duration = Duration::from_millis(self.fps_to_millis(fps) as u64);

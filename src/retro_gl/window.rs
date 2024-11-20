@@ -1,10 +1,9 @@
-use std::{rc::Rc, sync::Arc};
-
 use retro_ab::{core::AvInfo, erro_handle::ErroHandle, retro_sys::retro_log_level};
 use sdl2::{
     video::{GLContext, GLProfile, Window},
     Sdl, VideoSubsystem,
 };
+use std::{rc::Rc, sync::Arc};
 
 use crate::video::RetroVideoAPi;
 

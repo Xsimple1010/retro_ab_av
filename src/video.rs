@@ -1,4 +1,4 @@
-use crate::retro_gl::window::GlWIndow;
+use crate::{print_scree::PrintScree, retro_gl::window::GlWIndow};
 use retro_ab::{
     core::AvInfo,
     erro_handle::ErroHandle,
@@ -10,6 +10,7 @@ use retro_ab::{
 use sdl2::Sdl;
 use std::{
     ffi::{c_uint, c_void},
+    path::PathBuf,
     ptr::{addr_of, addr_of_mut, null},
     sync::Arc,
 };
@@ -66,7 +67,9 @@ pub trait RetroVideoAPi {
     fn get_proc_address(&self, proc_name: &str) -> *const ();
 }
 
-pub struct RetroVideo;
+pub struct RetroVideo {
+    av_info: Arc<AvInfo>,
+}
 
 impl Drop for RetroVideo {
     fn drop(&mut self) {
@@ -82,7 +85,9 @@ impl RetroVideo {
             RETRO_HW_CONTEXT_OPENGL_CORE | RETRO_HW_CONTEXT_NONE => {
                 unsafe { WINDOW_CTX = Some(Box::new(GlWIndow::new(sdl, av_info)?)) }
 
-                return Ok(Self);
+                return Ok(Self {
+                    av_info: av_info.clone(),
+                });
             }
             // RETRO_HW_CONTEXT_VULKAN => {}
             _ => Err(ErroHandle {
@@ -115,6 +120,17 @@ impl RetroVideo {
             if let Some(window) = &mut *addr_of_mut!(WINDOW_CTX) {
                 window.resize(new_size)
             }
+        }
+    }
+
+    pub fn print_screen(&self, out_path: &str, file_name: &str) -> Result<(), ErroHandle> {
+        unsafe {
+            PrintScree::take(
+                &*addr_of!(RAW_TEX_POINTER),
+                &self.av_info,
+                &mut PathBuf::from(out_path),
+                file_name,
+            )
         }
     }
 }
