@@ -31,6 +31,7 @@ static mut RAW_TEX_POINTER: RawTextureData = RawTextureData {
     width: 0,
 };
 
+//noinspection RsPlaceExpression
 pub fn video_refresh_callback(data: *const c_void, width: c_uint, height: c_uint, pitch: usize) {
     unsafe {
         RAW_TEX_POINTER = RawTextureData {
@@ -65,6 +66,8 @@ pub trait RetroVideoAPi {
     fn resize(&mut self, new_size: (u32, u32));
 
     fn get_proc_address(&self, proc_name: &str) -> *const ();
+
+    fn full_screen(&mut self);
 }
 
 pub struct RetroVideo {

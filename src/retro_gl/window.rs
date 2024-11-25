@@ -1,11 +1,11 @@
+use crate::video::RetroVideoAPi;
 use retro_ab::{core::AvInfo, erro_handle::ErroHandle, retro_sys::retro_log_level};
+use sdl2::video::FullscreenType;
 use sdl2::{
     video::{GLContext, GLProfile, Window},
     Sdl, VideoSubsystem,
 };
 use std::{rc::Rc, sync::Arc};
-
-use crate::video::RetroVideoAPi;
 
 use super::{gl::gl, render::Render};
 
@@ -59,6 +59,10 @@ impl RetroVideoAPi for GlWIndow {
 
     fn get_proc_address(&self, proc_name: &str) -> *const () {
         self.video.gl_get_proc_address(proc_name)
+    }
+
+    fn full_screen(&mut self) {
+        self.window.set_fullscreen(FullscreenType::True).unwrap()
     }
 }
 
