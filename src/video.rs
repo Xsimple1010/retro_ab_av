@@ -67,7 +67,9 @@ pub trait RetroVideoAPi {
 
     fn get_proc_address(&self, proc_name: &str) -> *const ();
 
-    fn full_screen(&mut self);
+    fn enable_full_screen(&mut self);
+
+    fn disable_full_screen(&mut self);
 }
 
 pub struct RetroVideo {
@@ -134,6 +136,18 @@ impl RetroVideo {
                 &mut PathBuf::from(out_path),
                 file_name,
             )
+        }
+    }
+
+    pub fn disable_full_screen(&self) {
+        if let Some(window) = &mut *addr_of_mut!(WINDOW_CTX) {
+            window.disable_full_screen()
+        }
+    }
+
+    pub fn full_screen(&mut self) {
+        if let Some(window) = &mut *addr_of_mut!(WINDOW_CTX) {
+            window.enable_full_screen()
         }
     }
 }

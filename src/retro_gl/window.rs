@@ -61,8 +61,12 @@ impl RetroVideoAPi for GlWIndow {
         self.video.gl_get_proc_address(proc_name)
     }
 
-    fn full_screen(&mut self) {
+    fn enable_full_screen(&mut self) {
         self.window.set_fullscreen(FullscreenType::True).unwrap()
+    }
+
+    fn disable_full_screen(&mut self) {
+        self.window.set_fullscreen(FullscreenType::Off).unwrap()
     }
 }
 
