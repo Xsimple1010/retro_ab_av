@@ -140,14 +140,18 @@ impl RetroVideo {
     }
 
     pub fn disable_full_screen(&self) {
-        if let Some(window) = &mut *addr_of_mut!(WINDOW_CTX) {
-            window.disable_full_screen()
+        unsafe {
+            if let Some(window) = &mut *addr_of_mut!(WINDOW_CTX) {
+                window.disable_full_screen()
+            }
         }
     }
 
     pub fn full_screen(&mut self) {
-        if let Some(window) = &mut *addr_of_mut!(WINDOW_CTX) {
-            window.enable_full_screen()
+        unsafe {
+            if let Some(window) = &mut *addr_of_mut!(WINDOW_CTX) {
+                window.enable_full_screen()
+            }
         }
     }
 }
