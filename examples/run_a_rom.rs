@@ -11,6 +11,7 @@ use retro_ab_av::{
     video_refresh_callback, Event, Keycode,
 };
 use std::sync::Arc;
+use sdl2::event::WindowEvent;
 
 //essas callbacks nao sao relevantes para esse projeto!
 fn input_poll_callback() {}
@@ -49,9 +50,7 @@ fn create_core_ctx() -> Result<RetroAB, ErroHandle> {
         retro_hw_context_type::RETRO_HW_CONTEXT_OPENGL_CORE,
     )?;
 
-    core_ctx.core().init()?;
-
-    core_ctx.core().load_game(&args.core)?;
+    core_ctx.core().load_game(&args.rom)?;
 
     Ok(core_ctx)
 }
@@ -75,12 +74,24 @@ fn create_new_game_window() -> Result<(), ErroHandle> {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => {}
+
+                Event::KeyDown {
+                    keycode: Some(Keycode::F6),
+                    ..
+                } => {
+                    av_ctx.video.print_screen(
+                        &retro_ab.core().paths.assets,
+                        &retro_ab.core().rom_name.lock().unwrap()
+                    )?
+                }
+
                 Event::Window {
                     timestamp: _,
                     window_id: _,
                     win_event,
                 } => match win_event {
-                    retro_ab_av::WindowEvent::Close => break 'running,
+                    WindowEvent::Close => break 'running,
+
                     _ => {}
                 },
                 _ => {}

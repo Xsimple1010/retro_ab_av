@@ -143,27 +143,27 @@ impl Render {
         let g_api = &av_info.video.graphic_api;
         let geo = &av_info.video.geometry;
 
-        if *g_api.depth.lock().unwrap() && *g_api.stencil.lock().unwrap() {
+        if *g_api.depth.read().unwrap() && *g_api.stencil.read().unwrap() {
             let new_rbo = RenderBuffer::new(gl.clone());
 
             new_rbo.bind();
             new_rbo.storage(
                 DEPTH24_STENCIL8,
-                *geo.max_width.lock().unwrap() as i32,
-                *geo.max_height.lock().unwrap() as i32,
+                *geo.max_width.read().unwrap() as i32,
+                *geo.max_height.read().unwrap() as i32,
             );
 
             fbo.attach_render_buffer(DEPTH_STENCIL_ATTACHMENT, new_rbo.get_id());
 
             rbo.replace(new_rbo);
-        } else if *g_api.depth.lock().unwrap() {
+        } else if *g_api.depth.read().unwrap() {
             let new_rbo = RenderBuffer::new(gl.clone());
 
             new_rbo.bind();
             new_rbo.storage(
                 DEPTH_COMPONENT24,
-                *geo.max_width.lock().unwrap() as i32,
-                *geo.max_height.lock().unwrap() as i32,
+                *geo.max_width.read().unwrap() as i32,
+                *geo.max_height.read().unwrap() as i32,
             );
 
             fbo.attach_render_buffer(DEPTH_ATTACHMENT, new_rbo.get_id());
@@ -182,7 +182,7 @@ impl Render {
             .video
             .graphic_api
             .fbo
-            .lock()
+            .write()
             .unwrap()
             .replace(fbo.get_id() as usize);
 

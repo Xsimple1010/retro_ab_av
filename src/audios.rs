@@ -79,7 +79,7 @@ impl RetroAudio {
     }
 
     pub fn resume_new_frame(&mut self) {
-        if let Ok(sample_rate) = self.av_info.timing.sample_rate.try_lock() {
+        if let Ok(sample_rate) = self.av_info.timing.sample_rate.read() {
             let data = unsafe { &*slice_from_raw_parts(NEW_FRAME.data, NEW_FRAME.frames * 2) };
 
             let channel = unsafe { NEW_FRAME.channel };

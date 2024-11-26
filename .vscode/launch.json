@@ -19,8 +19,8 @@
                 }
             },
             "args": [
-               "--core=C:/RetroArch-Win64/cores/ppsspp_libretro.dll",
-                "--rom=C:/Users/aderv/Downloads/Crisis Core - Final Fantasy VII (USA).iso"
+               "--core=../retro_ab_rs/cores/test.dll",
+                "--rom=../retro_ab_gamepad/roms/test.smc"
             ],
             "cwd": "${workspaceFolder}"
         },

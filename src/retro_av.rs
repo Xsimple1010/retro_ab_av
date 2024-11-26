@@ -60,7 +60,7 @@ impl RetroAvCtx {
     }
 
     pub fn sync(&mut self) -> bool {
-        let fps = self.av_info.timing.fps.lock().unwrap().abs();
+        let fps = self.av_info.timing.fps.read().unwrap().abs();
         self.sync.sync(fps)
     }
 }

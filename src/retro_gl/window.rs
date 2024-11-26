@@ -91,8 +91,8 @@ impl GlWIndow {
         let win_result = video
             .window(
                 "retro_ab_av",
-                *geo.base_width.lock().unwrap(),
-                *geo.base_height.lock().unwrap(),
+                *geo.base_width.read().unwrap(),
+                *geo.base_height.read().unwrap(),
             )
             .opengl()
             .maximized()
@@ -110,8 +110,8 @@ impl GlWIndow {
                 let _ = video.gl_set_swap_interval(1);
 
                 let result = window.set_minimum_size(
-                    *av_info.video.geometry.base_width.lock().unwrap(),
-                    *av_info.video.geometry.base_height.lock().unwrap(),
+                    *av_info.video.geometry.base_width.read().unwrap(),
+                    *av_info.video.geometry.base_height.read().unwrap(),
                 );
 
                 if let Err(e) = result {

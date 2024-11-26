@@ -14,7 +14,7 @@ pub fn new_vertex(
     origin_h: f32,
 ) -> [GlVertex; 4] {
     let (v_bottom, v_right) = resize_vertex_to_aspect(
-        *geo.aspect_ratio.lock().unwrap(),
+        *geo.aspect_ratio.read().unwrap(),
         window_w,
         window_h,
         origin_w,
@@ -34,8 +34,8 @@ pub fn new_vertex(
 }
 
 fn resize_texture(geo: &Geometry, origin_w: f32, origin_h: f32) -> (f32, f32) {
-    let bottom = origin_h / *geo.max_height.lock().unwrap() as f32;
-    let right = origin_w / *geo.max_width.lock().unwrap() as f32;
+    let bottom = origin_h / *geo.max_height.read().unwrap() as f32;
+    let right = origin_w / *geo.max_width.read().unwrap() as f32;
 
     (bottom, right)
 }
