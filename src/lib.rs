@@ -1,3 +1,4 @@
+extern crate image;
 extern crate retro_ab;
 extern crate rodio;
 extern crate sdl2;

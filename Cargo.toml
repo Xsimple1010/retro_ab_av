@@ -6,11 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-image = "0.25.5"
-retro_ab = { git = "https://github.com/Xsimple1010/retro_ab_rs.git" }
-rodio = "0.20.1"
-sdl2 = "0.37.0"
+retro_ab.workspace = true
+rodio.workspace = true
+sdl2.workspace = true
+image.workspace = true
 
 [build-dependencies]
-gl_generator = "0.14"
-cfg_aliases = "0.1.1"
+cfg_aliases.workspace = true
+gl_generator.workspace = true
+
+
